@@ -23,7 +23,7 @@ fi
 alias ..='cd ..'
 alias ...='cd ../..'
 alias nnn='nnn -a'
-alias tem='curl wttr.in/110003'
+alias tem='curl wttr.in/PIN_Of_area'
 alias img='kitty +kitten icat'
 alias lznvim='NVIM_APPNAME=lazy_nvim nvim'
 # alias scrcpy='SDL_AUDIODRIVER=pipewire scrcpy'
