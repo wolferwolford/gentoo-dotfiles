@@ -1,0 +1,6586 @@
+* Custom
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle ~/.config/emacs-straight/init.el
+:END:
+
+#+begin_src emacs-lisp
+  (setq custom-file
+        (expand-file-name "custom.el" user-emacs-directory))
+
+  (when (file-exists-p custom-file)
+    (load custom-file))
+#+end_src
+
+* Install straight
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle ~/.config/emacs-straight/init.el
+:END:
+
+#+begin_src emacs-lisp
+    (defvar bootstrap-version)
+  (let ((bootstrap-file
+         (expand-file-name
+          "straight/repos/straight.el/bootstrap.el"
+          (or (bound-and-true-p straight-base-dir)
+              user-emacs-directory)))
+        (bootstrap-version 7))
+    (unless (file-exists-p bootstrap-file)
+      (with-current-buffer
+          (url-retrieve-synchronously
+           "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+           'silent 'inhibit-cookies)
+        (goto-char (point-max))
+        (eval-print-last-sexp)))
+    (load bootstrap-file nil 'nomessage))
+
+  (setq straight-process-buffer " *straight-process*")
+
+  ;; pkg installing because of using straight
+  (straight-use-package 'org)
+#+end_src
+
+* UI
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle ~/.config/emacs-straight/init.el
+:END:
+** Startup Polish
+#+begin_src emacs-lisp
+  (setq inhibit-startup-message t)  
+  ;;(blink-cursor-mode -1)
+  (menu-bar-mode -1)
+  (tool-bar-mode -1)             
+  (scroll-bar-mode -1)
+#+end_src
+
+** Wrap
+#+begin_src emacs-lisp
+  (global-visual-line-mode)
+  (setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
+#+end_src
+
+** Empty buffer
+#+begin_src emacs-lisp
+  (setq-default indicate-empty-lines t)
+  (set-face-background 'fringe (face-background 'default))
+  (setq-default indicate-buffer-boundaries 'left)
+#+end_src
+
+** Relative & absolute lines
+#+begin_src emacs-lisp
+  (setq display-line-numbers-type 'relative
+        display-line-numbers-current-absolute t)
+
+  (global-display-line-numbers-mode 1)
+#+end_src
+
+** 80 char limit
+#+begin_src emacs-lisp
+  (setq-default fill-column 80)
+  (global-display-fill-column-indicator-mode 1)
+#+end_src
+
+** Theme & transparency
+#+begin_src emacs-lisp
+  ;; theme
+  ;; (setq modus-themes-common-palette-overrides
+  ;;       '((comment fg-dim))) 
+  ;; (load-theme 'modus-vivendi-tinted t)
+
+
+  ;; (defun wolfer/apply-ui-overrides ()
+  ;;   ;; Paren
+  ;;   (set-face-attribute 'show-paren-match nil
+  ;; 		      :background "#bd93f9"
+  ;; 		      :foreground "#f8f8f2"
+  ;; 		      :weight 'bold)
+
+  ;;   (set-face-attribute 'show-paren-match-expression nil
+  ;; 		      :background "#44475a")
+
+  ;;   (set-face-attribute 'show-paren-mismatch nil
+  ;; 		      :background "#ff5555"
+  ;; 		      :foreground "#f8f8f2"
+  ;; 		      :weight 'bold))
+
+
+  ;; (use-package dracula-theme
+  ;;   :straight t
+  ;;   :config
+  ;;   (load-theme 'dracula t))
+  ;; (wolfer/apply-ui-overrides)
+
+  (use-package ef-themes
+  :straight t
+  :config
+  (load-theme 'ef-maris-dark t))
+
+  ;; transparency
+  (set-frame-parameter nil 'alpha-background 85)
+  (add-to-list 'default-frame-alist '(alpha-background . 85))
+
+  ;; numbers match the background
+  (set-face-attribute 'line-number nil
+                      ;; :background nil
+      		    :background (face-background 'default nil t)
+                      :foreground "#5c6370")
+  
+  (set-face-attribute 'line-number-current-line nil
+                      ;;:background nil
+      		    :background (face-background 'default nil t)
+                      :foreground "#ffffff"
+            	    :weight 'bold)
+
+  (set-face-attribute 'fringe nil
+                      ;; :background nil
+      		    ;;:background 'unspecified
+      		    :background (face-background 'default nil t))
+#+end_src
+
+** Font
+#+begin_src emacs-lisp
+  (set-face-attribute 'default nil
+                       :family "JetBrainsMono Nerd Font"
+                       :height 140) ;; 140 => 14pt
+#+end_src
+
+* Terminal Support
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle ~/.config/emacs-straight/init.el
+:END:
+#+begin_src emacs-lisp
+  (setq select-enable-clipboard t)
+  (setq select-enable-primary t)
+  (setq xterm-enable-clipboard t)
+  (setq epg-pinentry-mode 'loopback)
+
+  ;; clipetty
+  (use-package clipetty
+    :straight t
+    :init
+    (global-clipetty-mode 1))
+#+end_src
+
+* Behavior (Trash, Recent, Bookmark, Backup)
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle ~/.config/emacs-straight/init.el
+:END:
+** Trash
+#+begin_src emacs-lisp
+  (setq delete-by-moving-to-trash t)
+#+end_src
+
+** Recent Files
+#+begin_src emacs-lisp
+  (defconst my-data-directory
+  (expand-file-name "data/" user-emacs-directory))
+
+;; ensure dir exits if not
+;; (unless (file-directory-p my-data-directory)
+;;   (make-directory my-data-directory t))
+(make-directory my-data-directory t)
+
+(defvar wolfer-recentf-file
+  (expand-file-name "recentf" my-data-directory))
+
+(make-directory user-emacs-directory t)
+
+(use-package recentf
+  :straight nil
+  :init
+  (setq recentf-save-file wolfer-recentf-file
+        recentf-max-saved-items 200
+        recentf-auto-cleanup 'mode)
+
+  :config
+  (add-to-list 'recentf-exclude "undo-tree-history")
+  (add-to-list 'recentf-exclude "/tmp/")
+  (recentf-mode 1)
+
+  ;; ensure save on exit
+  (add-hook 'kill-emacs-hook #'recentf-save-list))
+#+end_src
+
+** Bookmark
+#+begin_src emacs-lisp
+  (setq bookmark-default-file
+      (expand-file-name "bookmarks" my-data-directory)
+      bookmark-save-flag 1
+      bookmark-sort-flag t
+      bookmark-use-annotations nil
+      bookmark-automatically-show-annotations nil
+      bookmark-fringe-mark nil)
+
+(add-hook 'bookmark-bmenu-mode-hook #'hl-line-mode)
+#+end_src
+
+** Backup
+#+begin_src emacs-lisp
+    (defvar wolfer-backup-dir
+    (expand-file-name "backups/" user-emacs-directory))
+  (make-directory wolfer-backup-dir t)
+
+  (setq make-backup-files t
+        version-control t
+        kept-new-versions 10
+        kept-old-versions 2
+        delete-old-versions t
+        backup-directory-alist
+        `(("." . ,wolfer-backup-dir)))
+
+  (setq tramp-backup-directory-alist
+      backup-directory-alist)
+#+end_src
+
+** debug
+#+begin_src emacs-lisp
+  (setq debug-on-error t)
+#+end_src
+
+* PKG
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle ~/.config/emacs-straight/init.el
+:END:
+** Installed
+*** Evil
+#+begin_src emacs-lisp
+  (use-package evil
+    :straight t
+    :init
+    (setq evil-want-keybinding nil)
+    :config
+    (evil-mode 1)
+    (dolist (mode '(term-mode
+                    vterm-mode
+                    eshell-mode
+                    shell-mode
+                    dired-mode
+                    help-mode
+                    helpful-mode
+                    Info-mode
+                    Man-mode
+                    woman-mode
+                    apropos-mode
+                    occur-mode
+                    special-mode
+                    image-mode
+                    sly-mrepl-mode
+                    sly-db-mode
+                    sly-inspector-mode
+  		  sly-trace-dialog-mode
+                    sly-xref-mode
+  		  eat-mode
+  		  org-mode
+  		  calendar-mode
+  		  messages-buffer-mode
+  		  debugger-mode
+  		  ;;mu4e-main-mode
+  		  ;; mu4e-headers-mode
+  		  ;;mu4e-view-mode
+  		  ;; mu4e-org-mode
+  		  ))
+      (evil-set-initial-state mode 'emacs)))
+#+end_src
+*** doom-modeline
+#+begin_src emacs-lisp
+  (use-package doom-modeline
+    :straight t
+    :init (doom-modeline-mode 1)
+    :config
+    (line-number-mode 1)
+    (column-number-mode 1)
+    ;;(display-time-mode 1)
+    ;;(display-battery-mode 1)
+    (set-face-attribute 'doom-modeline-evil-emacs-state nil
+                        :foreground "#bb9af7")
+    (set-face-attribute 'doom-modeline-evil-normal-state nil
+                        :foreground "#79a8ff")
+    (set-face-attribute 'doom-modeline-evil-insert-state nil
+                        :foreground "#b6b6b6")
+    :custom
+    (doom-modeline-height 25)
+    (doom-modeline-bar-width 4)
+    (doom-modeline-icon t)
+    (doom-modeline-major-mode-icon t)
+    (doom-modeline-major-mode-color-icon t)
+    (doom-modeline-buffer-state-icon t)
+    (doom-modeline-buffer-modification-icon t)
+    (doom-modeline-time t)
+    (doom-modeline-battery t)
+    (doom-modeline-percent-position '(-3 "%p"))
+    (doom-modeline-position-line-format '("L%l"))
+    (doom-modeline-position-column-format '("C%c"))
+    (doom-modeline-buffer-encoding t)
+    (doom-modeline-indent-info nil)
+    (doom-modeline-total-line-number nil)
+    (doom-modeline-vcs-max-length 15)
+    ;;(doom-modeline-buffer-file-name-style 'truncate-upto-project)
+    (doom-modeline-buffer-file-name-style 'truncate-with-project))
+#+end_src
+
+*** Vertico
+#+begin_src emacs-lisp
+  (use-package vertico
+    :straight t
+    :init
+    (setq vertico-cycle t)
+    (vertico-mode))
+#+end_src
+
+*** Orderless
+#+begin_src emacs-lisp
+  (use-package orderless
+    :straight t
+    :custom
+    (completion-styles '(orderless basic))
+    (completion-category-defaults nil)
+    (completion-category-overrides
+     '((file (styles basic partial-completion)))))
+#+end_src
+
+*** Consult
+#+begin_src emacs-lisp
+  (use-package consult
+    :straight t
+    :init
+    (setq consult-preview-key 'any))
+#+end_src
+
+*** Marginalia
+#+begin_src emacs-lisp
+  (use-package marginalia
+    :straight t
+    :init
+    (marginalia-mode))
+#+end_src
+
+*** Which key
+#+begin_src emacs-lisp
+  (use-package which-key
+    :straight t
+    :init
+    (setq which-key-idle-delay 0.3
+  	which-key-idle-secondary-delay 0.09
+  	which-key-sort-order 'which-key-key-order
+  	which-key-min-display-lines 9
+  	which-key-max-description-length 40
+  	which-key-side-window-max-width 0.6)
+    :config
+    (which-key-mode))
+#+end_src
+
+*** helpfull
+#+begin_src emacs-lisp
+  (use-package helpful
+    :straight t
+    :commands (helpful-callable
+               helpful-variable
+               helpful-command
+               helpful-key)
+    :bind (("C-h f" . helpful-callable)   ; functions (and macros)
+  	 ("C-h v" . helpful-variable)   ; variables
+  	 ("C-h k" . helpful-key)        ; key bindings
+  	 ("C-h x" . helpful-command)    ; commands (M-x)
+  	 ("C-c C-d" . helpful-at-point)))
+#+end_src
+
+*** terminal
+**** Vterm
+#+begin_src emacs-lisp
+  (use-package vterm
+    :straight t
+    :commands vterm
+    :config
+    (setq vterm-max-scrollback 20000))
+#+end_src
+
+**** Multi Vterm
+#+begin_src emacs-lisp
+  (use-package multi-vterm
+    :straight t
+    :after vterm
+    :config
+    ;; how many lines terminal remembers
+    (setq vterm-max-scrollback 20000
+  	;; always reuse the current window
+  	multi-vterm-dedicated-window-height-percent 30))
+#+end_src
+
+**** eat
+#+begin_src emacs-lisp
+  (use-package eat
+    :straight t
+    :commands eat
+    :config
+    (setq eat-max-scrollback 20000
+          eat-enable-kill-from-terminal t
+          eat-enable-yank-to-terminal t))
+#+end_src
+
+*** Undo tree
+#+begin_src emacs-lisp
+  (defun wolfer-disable-undo-tree-for-images ()
+    (undo-tree-mode -1))
+
+  (use-package undo-tree
+    :straight t
+    :init
+    (defvar wolfer-undo-history-dir
+      (expand-file-name "undo-tree-history" user-emacs-directory))
+
+    ;; mkdir -p ~/.emacs.d/undo-tree-history
+    (make-directory wolfer-undo-history-dir t)
+
+    (setq undo-tree-auto-save-history t
+          undo-limit 2000000
+          undo-strong-limit 40000000
+          undo-outer-limit 400000000
+          undo-tree-history-directory-alist
+          `(("." . ,wolfer-undo-history-dir)))
+
+    :hook (image-mode . wolfer-disable-undo-tree-for-images)
+
+    :config
+    (global-undo-tree-mode 1))
+#+end_src
+
+*** Keycast
+#+begin_src emacs-lisp
+  (use-package keycast
+    :straight t
+    :commands (keycast-header-line-mode
+               keycast-mode-line-mode
+               keycast-tab-bar-mode
+               keycast-log-mode))
+#+end_src
+
+*** Magit
+#+begin_src emacs-lisp
+  (use-package magit
+    :straight t)
+#+end_src
+
+*** Perspective
+#+begin_src emacs-lisp
+  ;; (use-package perspective
+  ;;   :straight t
+  ;;   :init
+  ;;   (setq persp-mode-prefix-key (kbd "C-c x"))
+  ;;   (persp-mode)
+  ;;   ;; :config
+  ;;   ;; ;;  (setq persp-state-default-file "~/.emacs.d/persp-state.el")
+  ;;   ;; (setq persp-state-default-file
+  ;;   ;; 	(expand-file-name "persp-state.el" user-emacs-directory))
+  ;;   ;; (add-hook 'kill-emacs-hook #'persp-state-save)
+  ;;   ;; ;;(add-hook 'emacs-startup-hook #'persp-state-load)
+  ;;   ;;   (add-hook 'emacs-startup-hook
+  ;;   ;; 	    (lambda ()
+  ;;   ;; 	      (when (file-exists-p persp-state-default-file)
+  ;;   ;; 		(persp-state-load persp-state-default-file))))
+  ;;   )
+#+end_src
+
+*** Treemacs
+#+begin_src emacs-lisp
+  (use-package treemacs
+    :straight t
+    :commands treemacs
+    :init
+    (setq treemacs-width 40
+  	treemacs-is-never-other-window t
+  	treemacs-collapse-dirs 3
+  	treemacs-follow-after-init t)
+    :config
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always))
+#+end_src
+
+**** Treemace Evil
+#+begin_src emacs-lisp
+  (use-package treemacs-evil
+    :after (treemacs evil)
+    :straight t)
+#+end_src
+
+**** Treemacs Magit
+#+begin_src emacs-lisp
+  
+#+end_src
+
+**** Project Treemacs
+#+begin_src emacs-lisp
+  (use-package project-treemacs
+    :straight t
+    :after treemacs
+    :config
+    (project-treemacs-mode 1))
+#+end_src
+
+*** Lisp Coading helper
+**** Parendit
+#+begin_src emacs-lisp
+  (use-package paredit
+    :straight t
+    ;; :hook ((emacs-lisp-mode
+    ;;         lisp-mode
+    ;;         lisp-interaction-mode
+    ;;         ;;scheme-mode
+    ;;         ;;sly-mrepl-mode
+    ;; 	  ) . paredit-mode)
+    )
+#+end_src
+
+**** Rainbow Delimeter
+#+begin_src emacs-lisp
+  (use-package rainbow-delimiters
+    :straight t
+    :hook ((emacs-lisp-mode
+            lisp-mode
+            lisp-interaction-mode
+            ;;scheme-mode
+            sly-mrepl-mode) . rainbow-delimiters-mode))
+#+end_src
+
+**** Highlight defined
+#+begin_src emacs-lisp
+  (use-package highlight-defined
+    :straight t
+    :hook ((emacs-lisp-mode
+            lisp-mode
+            lisp-interaction-mode) . highlight-defined-mode))
+#+end_src
+
+**** Smartparen
+#+begin_src emacs-lisp
+  (use-package smartparens
+    :straight t
+    :hook ((prog-mode     . smartparens-mode)
+  	 (markdown-mode . smartparens-mode)
+  	 (org-mode      . smartparens-mode))
+    :config
+    (require 'smartparens-config))
+#+end_src
+
+**** Sly
+#+begin_src emacs-lisp
+  (use-package sly
+    :straight t
+    :init
+    (setq inferior-lisp-program "sbcl"))
+#+end_src
+
+*** Minimap
+#+begin_src emacs-lisp
+   (use-package minimap
+    :straight t
+    :commands minimap-mode)
+#+end_src
+
+*** Spell Fu
+#+begin_src emacs-lisp
+  (use-package spell-fu
+    :straight t
+    :hook ((text-mode . spell-fu-mode)
+  	 (org-mode . spell-fu-mode)))
+#+end_src
+
+*** Dashboard
+#+begin_src emacs-lisp
+  (use-package dashboard
+    :straight t
+    :config
+    ;;(setq dashboard-startup-banner 'logo) ;; or 'official
+    (setq dashboard-startup-banner "~/.config/emacs-straight/data/image.png")
+    (setq dashboard-banner-logo-title nil)
+    (setq dashboard-center-content t)
+    (setq dashboard-set-heading-icons t)
+    (setq dashboard-set-file-icons t)
+    (setq dashboard-items '((recents  . 5)
+  			  (projects . 5)
+  			  (agenda . 5)))
+    (dashboard-setup-startup-hook))
+
+  (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
+#+end_src
+
+*** Auto Completion
+**** Electric
+#+begin_src emacs-lisp
+  (electric-pair-mode 1)
+  (electric-indent-mode 1)
+  (electric-layout-mode 1)
+  (setq tab-always-indent 'complete)
+  ;; (defun wolfer-org-electric-quotes ()
+  ;;   (setq-local electric-quote-context-sensitive t)
+  ;;   (setq-local electric-quote-paragraph t))
+
+  ;; (add-hook 'org-mode-hook #'wolfer-org-electric-quotes)
+
+  ;; (electric-quote-mode 1)
+
+  ;; (add-hook 'prog-mode-hook
+  ;;           (lambda ()
+  ;;             (electric-quote-local-mode -1)))
+#+end_src
+
+**** Corfu
+#+begin_src emacs-lisp
+  (use-package corfu
+    :straight t
+
+    :custom
+    ;; Enable auto completion
+    (corfu-auto t)
+    (corfu-auto-delay 0.0)
+    (corfu-auto-prefix 2)
+
+    ;; Better navigation
+    (corfu-cycle t)
+    (corfu-preselect 'prompt)
+
+    ;; UI
+    (corfu-preview-current nil)
+    (corfu-quit-no-match 'separator)
+    (corfu-min-width 20)
+
+    ;; Show documentation popup
+    (corfu-popupinfo-delay '(0.5 . 0.2))
+
+    :init
+    (global-corfu-mode)
+    (corfu-history-mode)
+    (corfu-popupinfo-mode)
+
+    :bind
+    (:map corfu-map
+  	("TAB"       . corfu-next)
+  	("<tab>"     . corfu-next)
+  	("S-TAB"     . corfu-previous)
+  	("<backtab>" . corfu-previous)
+  	("RET"       . corfu-insert)
+  	("<return>"  . corfu-insert)))
+
+  (defun wolfer/org-disable-corfu-auto ()
+  "Disable Corfu auto-completion in Org buffers."
+  (setq-local corfu-auto nil))
+#+end_src
+
+**** Cape
+#+begin_src emacs-lisp
+  (use-package cape
+    :straight t
+    :after corfu
+
+    ;; :init
+    ;; ;; Global completion sources
+    ;; (add-to-list 'completion-at-point-functions #'cape-file)
+    ;; (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+    ;; (add-to-list 'completion-at-point-functions #'cape-keyword)
+
+    :custom
+    (dabbrev-check-other-buffers t)
+    (dabbrev-check-all-buffers t)
+
+    :config
+    ;; Merge all completion sources into one
+    (setq completion-at-point-functions
+  	(list
+  	 (cape-capf-super
+            #'cape-file
+            #'cape-dabbrev
+            #'cape-keyword))))
+#+end_src
+
+**** kind icon
+#+begin_src emacs-lisp
+  (use-package kind-icon
+  :straight t
+  :after corfu
+  :config
+  (setq kind-icon-default-face 'corfu-default)
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+#+end_src
+
+**** nerd-icons-completion
+#+begin_src emacs-lisp
+  (use-package nerd-icons-completion
+    :straight t
+    :after marginalia
+    :config
+    (nerd-icons-completion-mode))
+#+end_src
+
+**** percient
+#+begin_src emacs-lisp
+  (use-package prescient
+    :straight t
+    :config
+    (prescient-persist-mode 1))
+#+end_src
+
+**** corfu-percient
+#+begin_src emacs-lisp
+  (use-package corfu-prescient
+    :straight t
+    :after corfu
+    :config
+    (corfu-prescient-mode 1))
+#+end_src
+
+*** dired
+**** Dired Preview
+#+begin_src emacs-lisp
+  (use-package dired-preview
+    :straight t)
+#+end_src
+
+**** dirvish
+#+begin_src emacs-lisp
+  (use-package dirvish
+    :straight t
+    :commands (dirvish dirvish-dired))
+#+end_src
+
+**** diredfl
+#+begin_src emacs-lisp
+     (setq dired-listing-switches "-alh --group-directories-first")
+
+  (use-package diredfl
+   :straight t
+   :commands diredfl-mode)
+#+end_src
+
+**** dir before files
+#+begin_src emacs-lisp
+  (setq dired-listing-switches "-alh --group-directories-first")
+#+end_src
+
+*** Format All
+#+begin_src emacs-lisp
+  (use-package format-all
+    :straight t
+    :commands (format-all-buffer format-all-region))
+#+end_src
+
+*** Pulsar
+#+begin_src emacs-lisp
+  (use-package pulsar
+    :straight t
+    :init 
+    (pulsar-global-mode))
+#+end_src
+
+*** Modes
+**** markdown
+#+begin_src emacs-lisp
+  (use-package markdown-mode
+    :straight t
+    :mode ("\\.md\\'" . markdown-mode)
+    :init
+    (setq markdown-command "pandoc"))
+#+end_src
+
+**** rust
+#+begin_src emacs-lisp
+  (use-package rust-ts-mode
+    :straight nil
+    :mode "\\.rs\\'")
+#+end_src
+
+**** yaml
+#+begin_src emacs-lisp
+  (use-package yaml-ts-mode
+    :straight nil
+    :mode "\\.ya?ml\\'")
+#+end_src
+
+**** lua
+#+begin_src emacs-lisp
+  (use-package lua-ts-mode
+    :straight nil
+    :mode "\\.lua\\'")
+#+end_src
+
+**** toml
+#+begin_src emacs-lisp
+  (use-package toml-ts-mode
+    :straight nil
+    :mode "\\.toml\\'")
+#+end_src
+
+**** go
+#+begin_src emacs-lisp
+  (use-package go-ts-mode
+    :straight nil
+    :mode "\\.go\\'")
+#+end_src
+
+**** go
+#+begin_src emacs-lisp
+  
+#+end_src
+
+**** typescript
+#+begin_src emacs-lisp
+  (use-package typescript-mode
+    :straight t
+    :mode ("\\.ts\\'" . typescript-mode))
+#+end_src
+
+**** latex
+***** auctex
+#+begin_src emacs-lisp
+  ;; (use-package auctex
+  ;;   :straight t
+  ;;   :mode (("\\.tex\\'" . LaTeX-mode)
+  ;;      ("\\.sty\\'" . LaTeX-mode)
+  ;;      ("\\.cls\\'" . LaTeX-mode)
+  ;;      ("\\.dtx\\'" . LaTeX-mode)
+  ;;      ("\\.ins\\'" . LaTeX-mode)))
+
+  (use-package tex
+    :straight auctex
+    :mode (("\\.tex\\'" . LaTeX-mode)
+  	 ("\\.sty\\'" . LaTeX-mode)
+  	 ("\\.cls\\'" . LaTeX-mode)
+  	 ("\\.dtx\\'" . LaTeX-mode)
+  	 ("\\.ins\\'" . LaTeX-mode))
+    :hook
+    (LaTeX-mode . visual-line-mode)
+    :config
+    (setq TeX-auto-save t
+  	TeX-parse-self t
+  	TeX-PDF-mode t))
+#+end_src
+
+***** latex extra
+#+begin_src emacs-lisp
+  (use-package latex-extra
+    :straight t
+    :after auctex)
+#+end_src
+
+***** reftex
+#+begin_src emacs-lisp
+  (use-package reftex
+    :hook (LaTeX-mode . reftex-mode))
+#+end_src
+
+***** pdf support
+#+begin_src emacs-lisp
+  (setq TeX-view-program-selection '((output-pdf "Zathura")))
+  (setq TeX-source-correlate-mode t)
+  (setq TeX-source-correlate-start-server t)
+  (setq TeX-command-extra-options "-synctex=1")
+#+end_src
+
+**** qml
+#+begin_src emacs-lisp
+  (use-package qml-mode
+    :straight t
+    :mode "\\.qml\\'")
+#+end_src
+
+**** Docker
+#+begin_src emacs-lisp
+  (use-package dockerfile-mode
+    :straight t
+    :mode (("Dockerfile\\..*\\'" . dockerfile-mode)
+  	 ("\\.dockerfile\\'"   . dockerfile-mode)
+  	 ("\\.Dockerfile\\'"   . dockerfile-mode)))
+#+end_src
+
+*** highlight indent guide
+#+begin_src emacs-lisp
+  (use-package highlight-indent-guides
+    :straight t
+    :hook (prog-mode . highlight-indent-guides-mode)
+    :init
+    (setq highlight-indent-guides-method 'character
+  	highlight-indent-guides-character ?┊
+  	highlight-indent-guides-responsive 'top
+  	highlight-indent-guides-delay 0))
+#+end_src
+
+*** Multiple cursor
+#+begin_src emacs-lisp
+  (use-package multiple-cursors
+    :straight t
+    :after evil
+    :config
+    (evil-set-initial-state 'multiple-cursors-mode 'emacs))
+#+end_src
+
+*** yasnippet
+#+begin_src emacs-lisp
+  (use-package yasnippet
+    :straight t
+    :config
+    (yas-global-mode 1))
+#+end_src
+
+*** wgrep
+#+begin_src emacs-lisp
+  (use-package wgrep
+    :straight t
+    :after grep
+    :config
+    (setq wgrep-auto-save-buffer t)
+    (setq wgrep-change-readonly-file t))
+#+end_src
+
+*** lsp
+**** lsp mode
+#+begin_src emacs-lisp
+  (use-package lsp-mode
+    :straight t
+    :commands (lsp lsp-deferred)
+
+    :custom
+    ;; Let Corfu/Cape handle completion
+    (lsp-completion-provider :none)
+
+    ;; Nice header breadcrumbs
+    (lsp-headerline-breadcrumb-enable t)
+
+    ;; Highlight symbol under cursor
+    (lsp-enable-symbol-highlighting t)
+
+    ;; Allow snippets
+    (lsp-enable-snippet t)
+
+    :init
+    (setq lsp-keymap-prefix "C-c l"))
+#+end_src
+
+**** lsp ui
+#+begin_src emacs-lisp
+  (use-package lsp-ui
+    :straight t
+    :after lsp-mode
+
+    :custom
+    ;; Documentation popup
+    (lsp-ui-doc-enable t)
+    (lsp-ui-doc-show-with-cursor t)
+    (lsp-ui-doc-delay 0.3)
+
+    ;; Sideline diagnostics
+    (lsp-ui-sideline-enable t)
+    (lsp-ui-sideline-show-hover t)
+    (lsp-ui-sideline-show-code-actions t)
+
+    ;; Peek UI
+    (lsp-ui-peek-enable t)
+
+    ;; Imenu integration
+    (lsp-ui-imenu-enable t))
+#+end_src
+
+**** lsp-treemacs
+#+begin_src emacs-lisp
+  (use-package lsp-treemacs
+    :straight t
+    :after (lsp-mode treemacs)
+
+    :commands
+    (lsp-treemacs-errors-list
+     lsp-treemacs-symbols
+     lsp-treemacs-call-hierarchy
+     lsp-treemacs-references))
+#+end_src
+
+
+**** consult-lsp
+#+begin_src emacs-lisp
+  (use-package consult-lsp
+    :straight t
+    :after (consult lsp-mode)
+
+    :commands
+    (consult-lsp-symbols))
+#+end_src
+
+**** dap-mode
+#+begin_src emacs-lisp
+  (use-package dap-mode
+    :straight t
+    :after lsp-mode
+
+    :custom
+    (dap-auto-configure-features
+     '(sessions locals controls tooltip))
+
+    :config
+    (dap-auto-configure-mode)
+    (require 'dap-python)
+    (require 'dap-gdb-lldb))
+#+end_src
+
+*** bibel
+**** ensure installation
+#+begin_src emacs-lisp
+  (use-package ob-tmux
+    :straight t)
+  (use-package ob-compile
+    :straight t)
+  (use-package ob-browser
+    :straight t)
+  (use-package ob-rust
+    :straight t)
+  (use-package ob-go
+    :straight t)
+  (use-package ob-ts-node
+    :straight t)
+  (use-package ob-http
+    :straight t)
+#+end_src
+
+**** ob config
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((shell . t)
+     (python . t)
+     (C . t)
+     (java . t)
+     (js . t)
+     (lua . t)
+     (emacs-lisp . t)
+     (tmux . t)
+     (compile . t)
+     (browser . t)
+     (rust . t)
+     (go . t)
+     (ts-node . t)
+     (http . t)))
+#+end_src
+
+*** pdf tools
+#+begin_src emacs-lisp
+  (use-package pdf-tools
+    :straight t
+    :config
+    (pdf-tools-install))
+
+  (add-hook 'pdf-view-mode-hook
+          (lambda ()
+            (display-line-numbers-mode -1)))
+#+end_src
+
+*** tmr
+#+begin_src emacs-lisp
+  (use-package tmr
+    :straight t
+    :config
+    (define-key global-map (kbd "C-c c t") #'tmr-prefix-map)
+    (setq tmr-sound-file "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga"
+          tmr-notification-urgency 'normal
+          tmr-description-list 'tmr-description-history))
+#+end_src
+
+*** embark
+#+begin_src emacs-lisp
+  (use-package embark
+  :straight t
+  :bind
+  (("C-." . embark-act)
+   ;;("C-'" . embark-dwim)
+   ))
+#+end_src
+
+*** embark-consult
+#+begin_src emacs-lisp
+  (use-package embark-consult
+    :straight t
+    :after (embark consult))
+#+end_src
+
+*** denote
+#+begin_src emacs-lisp
+  (use-package denote
+    :straight t
+    :custom
+    ;; Where your notes live
+    (denote-directory (expand-file-name "~/.mine_denotes/"))
+    (denote-known-keywords
+     '("emacs" "openrc" "networking" "dailies"))
+    ;; Prompt for title and keywords
+    (denote-infer-keywords t)
+    (denote-sort-keywords t)
+    (denote-date-format nil)
+    :config
+    ;; Rename buffers when renaming files
+    (denote-rename-buffer-mode 1)
+    :bind
+    (("C-c n n" . denote)
+     ("C-c n l" . denote-link)
+     ("C-c n b" . denote-backlinks)
+     ("C-c n r" . denote-rename-file)
+     ("C-c n d" . denote-dired)
+     ("C-c n g" . denote-grep)
+     ("C-c n f" . denote-open-or-create)))
+#+end_src
+
+*** Mandoura
+#+begin_src emacs-lisp
+  (use-package mandoura
+    :straight
+    (mandoura
+     :type git
+     :host github
+     :repo "protesilaos/mandoura")
+    :after dired)
+#+end_src
+
+*** Roam-Ui
+#+begin_src emacs-lisp
+  (use-package websocket
+    :straight t)
+
+  (use-package simple-httpd
+    :straight t)
+
+  (use-package org-roam-ui
+    :straight t
+    :after (org-roam websocket simple-httpd)
+    :config
+    (setq org-roam-ui-sync-theme t
+          org-roam-ui-follow t
+          org-roam-ui-update-on-save t
+          org-roam-ui-open-on-start t))
+#+end_src
+
+*** nerd-icons
+#+begin_src emacs-lisp
+  (use-package nerd-icons
+  :straight t)
+#+end_src
+
+*** nerd-icons-dired
+#+begin_src emacs-lisp
+  (use-package nerd-icons-dired
+  :straight t
+  :hook (dired-mode . nerd-icons-dired-mode))
+#+end_src
+
+*** Roam
+**** roam
+#+begin_src emacs-lisp
+  (use-package org-roam
+    :straight t
+    :custom
+    (org-roam-directory "~/.mine_notes")
+    (org-roam-complete-everywhere t)
+    (org-roam-capture-templates
+     '(("d" "default" plain "%?"
+        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+  			 "#+title: ${title}\n#+date: %U\n")
+        :unnarrowed t)
+
+       ("l" "programming language" plain
+        "* Characteristics\n\n- Family: %?\n- Inspired by: \n\n* Reference:\n\n"
+        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+  			 "#+title: ${title}\n")
+        :unnarrowed t)
+
+       ("b" "book notes" plain
+        "\n* Source\n\nAuthor: %^{Author}\nTitle: ${title}\nYear: %^{Year}\n\n* Summary\n\n%?"
+        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+  			 "#+title: ${title}\n")
+        :unnarrowed t) 
+
+       ("p" "project" plain
+        "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+  			 "#+title: ${title}\n#+filetags: Project")
+        :unnarrowed t)))
+
+    :bind (("C-c r l" . org-roam-buffer-toggle)
+  	 ("C-c r f" . org-roam-node-find)
+  	 ("C-c r i" . org-roam-node-insert)
+  	 :map org-mode-map
+  	 ("C-M-i"   . completion-at-point))
+    :config
+    (org-roam-db-autosync-mode)
+    (require 'org-roam-dailies))
+#+end_src
+
+**** dailies
+#+begin_src emacs-lisp
+  (use-package org-roam-dailies
+    :straight nil
+    :after org-roam
+    :bind-keymap
+    ("C-c r d" . org-roam-dailies-map)
+    :bind
+    (:map org-roam-dailies-map
+  	("T" . org-roam-dailies-capture-tomorrow)
+  	("Y" . org-roam-dailies-capture-yesterday)))
+#+end_src
+
+*** iedit
+#+begin_src emacs-lisp
+  (use-package iedit
+    :straight t
+    :bind
+    ("C-c e" . iedit-mode))
+#+end_src
+
+*** Expand region
+#+begin_src emacs-lisp
+  (use-package expand-region
+    :straight t
+    :bind
+    ("C-=" . er/expand-region)
+    :config
+    (defun my/text-mode-expand-region ()
+      (setq-local er/try-expand-list
+  		(append er/try-expand-list
+  			'(mark-paragraph
+                            mark-page))))
+
+    (add-hook 'text-mode-hook #'my/text-mode-expand-region))
+#+end_src
+
+*** Embrace
+#+begin_src emacs-lisp
+  (use-package embrace
+  :straight t
+  :bind
+  ("C-:" . embrace-commander))
+#+end_src
+
+*** avy
+#+begin_src emacs-lisp
+  (use-package avy
+    :straight t
+    :bind
+    ("C-;" . avy-goto-char))
+#+end_src
+
+*** tempel
+#+begin_src emacs-lisp
+  (use-package tempel
+    :straight t
+    :bind
+    (("M-+" . tempel-complete)
+     ("M-*" . tempel-insert))
+
+    ;; :init
+    ;; (defun my/tempel-capf ()
+    ;;   (setq-local completion-at-point-functions
+    ;; 		(cons #'tempel-expand
+    ;;                     completion-at-point-functions)))
+
+    ;; :hook
+    ;; ((prog-mode . my/tempel-capf)
+    ;;  (text-mode . my/tempel-capf)
+    ;;  (prog-mode . tempel-abbrev-mode)
+    ;; (conf-mode . my/tempel-capf))
+    )
+#+end_src
+
+** Built Ins
+*** treesit
+#+begin_src emacs-lisp
+  (use-package treesit
+    :straight nil
+    :init
+    ;; Where Emacs should download Tree-sitter grammars from
+    (setq treesit-language-source-alist
+  	'((bash "https://github.com/tree-sitter/tree-sitter-bash")
+            (c "https://github.com/tree-sitter/tree-sitter-c")
+            (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+            (css "https://github.com/tree-sitter/tree-sitter-css")
+            (html "https://github.com/tree-sitter/tree-sitter-html")
+            (java "https://github.com/tree-sitter/tree-sitter-java")
+            (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+            (json "https://github.com/tree-sitter/tree-sitter-json")
+            (python "https://github.com/tree-sitter/tree-sitter-python")
+            (toml "https://github.com/tree-sitter/tree-sitter-toml")
+            (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+  	  (rust "https://github.com/tree-sitter/tree-sitter-rust")
+            (lua  "https://github.com/tree-sitter-grammars/tree-sitter-lua")
+  	  (go          "https://github.com/tree-sitter/tree-sitter-go")
+            (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+            (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")))
+
+    (when (treesit-available-p)
+      (setq treesit-font-lock-level 4)
+
+      (dolist (mapping
+               '((sh-mode . bash-ts-mode)
+                 (c-mode . c-ts-mode)
+                 (c++-mode . c++-ts-mode)
+                 (python-mode . python-ts-mode)
+                 (js-mode . json-ts-mode)
+                 (css-mode . css-ts-mode)
+                 (html-mode . html-ts-mode)
+                 (java-mode . java-ts-mode)))
+        (when (fboundp (cdr mapping))
+  	(add-to-list 'major-mode-remap-alist mapping)))))
+#+end_src
+
+*** eglot
+#+begin_src emacs-lisp
+  (use-package eglot
+    :straight nil
+    :commands eglot eglot-ensure
+    ;;:hook (prog-mode . eglot-ensure)
+    :custom
+    (eglot-sync-connect nil)
+    (eglot-autoshutdown t))
+
+  (with-eval-after-load 'eglot
+  (add-hook 'eglot-managed-mode-hook
+            (lambda ()
+              (setq-local completion-at-point-functions
+                          (list
+                           (cape-capf-super
+                            #'eglot-completion-at-point
+                            #'cape-file
+                            #'cape-dabbrev
+                            #'cape-keyword))))))
+#+end_src
+
+*** transient
+#+begin_src emacs-lisp
+  (use-package transient
+    :straight nil)
+#+end_src
+
+*** ediff
+#+begin_src emacs-lisp
+  (use-package ediff
+    :straight nil)
+#+end_src
+
+*** Org related
+**** org view mode
+#+begin_src emacs-lisp
+   (use-package org-view-mode
+    :straight t)
+#+end_src
+
+**** org morden
+#+begin_src emacs-lisp
+  (use-package org-modern
+    :straight t
+    ;; :hook
+    ;; (org-mode . org-modern-mode)
+    :custom
+    (org-modern-variable-pitch nil)
+    (org-modern-hide-stars nil)
+    (org-modern-table nil)		; Keep ASCII tables
+    ;;(org-modern-list '((?+ . "•")))
+    (org-modern-list '((?+ . "•")
+                       (?- . "–")
+                       (?* . "◦")))
+    (org-modern-star '("◉" "○" "✸" "✿" "▷"))
+    (org-modern-label-border 0.2))
+#+end_src
+
+**** org fractog
+#+begin_src emacs-lisp
+  (use-package org-fragtog
+    :straight t
+    :after org)
+#+end_src
+
+**** org present
+#+begin_src emacs-lisp
+  (use-package org-present
+    :straight t
+    :commands org-present)
+#+end_src
+
+**** Org
+#+begin_src emacs-lisp
+  ;; ── Step 1: Define faces (runs immediately) ───────
+  ;; (defface wolfer-org-bold
+  ;;   '((t :weight bold))
+  ;;   "Face for org bold.")
+
+  ;; (defface wolfer-org-italic
+  ;;   '((t :slant italic))
+  ;;   "Face for org italic.")
+
+  (use-package org
+    :straight t
+    :hook ((org-mode . org-indent-mode)
+           (org-mode . wolfer/org-disable-corfu-auto)
+           ;;(org-mode . org-fragtog-mode)
+    	 )
+    :config
+    (setq org-hide-leading-stars t
+          org-fontify-whole-heading-line t
+          org-list-indent-offset 2
+          org-M-RET-may-split-line '((default . nil))
+          org-insert-heading-respect-content t
+          org-log-done 'time
+          org-log-into-drawer t
+  	org-agenda-start-with-log-mode t
+  	org-tags-column 40
+          org-directory (expand-file-name "org" user-emacs-directory)
+          org-todo-keywords
+          '((sequence  "TODO(t)" "IN-PROGRESS(i!)" "WAIT(w@)" "|" "DONE(d@)" "CANCELED(c@)"))
+    	org-tag-alist
+    	'((:startgroup)
+            ("@wish"        . ?w)
+            ("@planning"    . ?p)
+  	  ("@case"        . ?C)
+  	  ("@idea"        . ?i)
+            (:endgroup)
+
+            ("@writing"     . ?W)
+    	    ("@learning"    . ?l)
+    	    ("@urgent"      . ?u)
+            ("@programming" . ?P)
+            ("@call"        . ?c)
+    	    ("@waiting"     . ?a)
+            ("@email"       . ?e)
+            ("@git"         . ?g))
+  	org-agenda-custom-commands
+  	'(("c" "Case" tags-todo "+@case")
+  	  ("u" "Untagged Tasks" tags-todo "-{.*}")
+  	  ("w" "Wish & Planning"
+  	   ((tags-todo "+@wish"
+  		       ((org-agenda-overriding-header "Wish Tasks")))
+  	    (tags-todo "+@planning"
+  		       ((org-agenda-overriding-header "Planning Tasks")))))
+  	  ("P" "Priority Dashboard"
+  	   ((tags-todo "PRIORITY=\"A\""
+                         ((org-agenda-overriding-header "High Priority")))
+              (tags-todo "PRIORITY=\"B\""
+                         ((org-agenda-overriding-header "Medium Priority")))
+              (tags-todo "PRIORITY=\"C\""
+                         ((org-agenda-overriding-header "Low Priority")))))
+  	  ("w" "Weekly Review"
+  	   ((agenda ""
+                      ((org-agenda-overriding-header "Completed Tasks")
+                       (org-agenda-skip-function
+                        '(org-agenda-skip-entry-if 'nottodo 'done))
+                       (org-agenda-span 'week)))
+
+              (agenda ""
+                      ((org-agenda-overriding-header "Unfinished Scheduled Tasks")
+                       (org-agenda-skip-function
+                        '(org-agenda-skip-entry-if 'todo 'done))
+                       (org-agenda-span 'week)))))))
+
+
+  	;; ensure org directory exists
+  	(unless (file-directory-p org-directory)
+  	  (make-directory org-directory t))
+
+  	;; define agenda files
+  	(setq org-agenda-files
+                (mapcar (lambda (f) (expand-file-name f org-directory))
+          	      '("tasks.org" "projects.org")))
+
+  	;; ensure the files exist
+  	(dolist (file org-agenda-files)
+  	  (unless (file-exists-p file)
+  	    (write-region "" nil file)))) 
+
+
+    ;; --------------------- for modus theme ------------------
+    ;; (with-eval-after-load 'org
+    ;;   (set-face-attribute 'org-level-1 nil
+    ;; 		      :foreground (modus-themes-get-color-value
+    ;; 				   'magenta-warmer)
+    ;; 		      :height 1.5
+    ;; 		      :weight 'bold)
+    ;;   (set-face-attribute 'org-level-2 nil
+    ;; 		      :foreground (modus-themes-get-color-value
+    ;; 				   'yellow-faint)
+    ;; 		      :height 1.4
+    ;; 		      :weight 'bold)
+    ;;    (set-face-attribute 'org-level-3 nil
+    ;; 		      :foreground (modus-themes-get-color-value
+    ;; 				   'cyan-warmer)
+    ;; 		      :height 1.3 :weight 'bold)
+    ;;   (set-face-attribute 'org-level-4 nil :height 1.2 :weight 'bold)
+    ;;    (set-face-attribute 'org-level-5 nil
+    ;; 		      :foreground (modus-themes-get-color-value
+    ;; 				   'fg-dim)
+    ;; 		      :height 1.1
+    ;; 		      :weight 'bold)
+    ;;   (set-face-attribute 'org-level-6 nil :height 1.0 :weight 'bold)
+    ;;   (set-face-attribute 'org-level-7 nil :height 1.0 :weight 'bold)
+    ;;   (set-face-attribute 'org-level-8 nil :height 1.0 :weight 'bold)
+
+    (with-eval-after-load 'org
+      (set-face-attribute 'org-level-1 nil :height 1.5 :weight 'bold)
+      (set-face-attribute 'org-level-2 nil :height 1.4 :weight 'bold)
+      (set-face-attribute 'org-level-3 nil :height 1.3 :weight 'bold)
+      (set-face-attribute 'org-level-4 nil :height 1.2 :weight 'bold)
+      (set-face-attribute 'org-level-5 nil :height 1.1 :weight 'bold)
+      (set-face-attribute 'org-level-6 nil :height 1.0 :weight 'bold)
+      (set-face-attribute 'org-level-7 nil :height 1.0 :weight 'bold)
+      (set-face-attribute 'org-level-8 nil :height 1.0 :weight 'bold)				   
+
+      ;; ── Step 2: Point org alist to your faces ─────────
+      (setq org-emphasis-alist
+    	  '(("*" bold)
+    	    ("/" italic)
+    	    ("_" underline)
+    	    ("+" (:strike-through t))
+    	    ("=" org-verbatim verbatim)
+    	    ("~" org-code verbatim))))
+
+    ;; ── Step 3: Colorize everything together ──────────
+    ;; (modus-themes-with-colors
+    ;;  (custom-set-faces
+    ;;   `(org-code
+    ;;     ((t :foreground ,green-faint
+    ;;         :background ,bg-green-nuanced)))
+    ;;   `(org-verbatim
+    ;;     ((t :foreground ,cyan-faint
+    ;;         :background ,bg-cyan-nuanced)))
+    ;;   `(wolfer-org-bold
+    ;;     ((t :foreground ,yellow-faint
+    ;;         :weight bold)))
+    ;;   `(wolfer-org-italic
+    ;;     ((t :foreground ,blue-faint
+    ;;         :slant italic)))))
+#+end_src
+
+**** Habit
+#+begin_src emacs-lisp
+  (use-package org-habit
+    :straight nil
+    :after org
+    :custom
+    (org-habit-preceding-days 21)
+    (org-habit-following-days 7)
+    (org-habit-show-habits-only-for-today nil)
+    :config
+    (add-to-list 'org-modules 'org-habit))
+#+end_src
+
+*** dictionary
+#+begin_src emacs-lisp
+  (use-package dictionary
+    :straight nil
+    :bind ("C-c c d" . dictionary-search)
+    :custom
+    ;; (dictionary-server "dict.org")
+    (setq dictionary-server "localhost")
+    (dictionary-create-buttons nil)
+    (dictionary-use-single-buffer t))
+#+end_src
+
+*** Holiday/calendar
+#+begin_src emacs-lisp
+  (setq calendar-location-name "New Delhi, India"
+      calendar-latitude 28.593300
+      calendar-longitude 77.206473)
+
+  ;; Automatically mark holidays
+    (setq calendar-mark-holidays-flag t)
+
+  ;;User defined holidays
+  ;; (setq holiday-other-holidays
+  ;;       '((holiday-fixed 10 2  "Ghandi Jayanti")))
+
+  (add-to-list 'holiday-other-holidays
+               '(holiday-fixed 10 2 "Gandhi Jayanti"))
+
+
+  ;;specific to a location or region or community-specific
+  ;; (setq holiday-local-holidays
+  ;;       '((holiday-fixed 5 1 "Maharashtra Day")
+  ;;         (holiday-fixed 11 1 "Karnataka Rajyotsava")))
+
+  (setq calendar-holidays
+        (append holiday-general-holidays
+                holiday-local-holidays
+  	      holiday-other-holidays
+                holiday-christian-holidays
+  	      holiday-islamic-holidays
+  	      holiday-solar-holidays))
+#+end_src
+
+Holiday functions you'll encounter
+Function	Purpose
+holiday-fixed	Fixed date every year
+holiday-float	First/Second/Last weekday
+holiday-easter-etc	Easter-related holidays
+holiday-hebrew	Hebrew calendar
+holiday-islamic	Islamic calendar
+holiday-julian	Julian calendar
+
+*** Diary and appointments
+#+begin_src emacs-lisp
+  ;; diary
+  (setq diary-file
+        (expand-file-name "diary" my-data-directory))
+
+  (unless (file-exists-p diary-file)
+    (write-region "" nil diary-file))
+
+  ;; appointments
+  (require 'appt)
+  (setq appt-message-warning-time 15)
+  (setq appt-display-interval 5)
+  (setq appt-audible t)
+  ;; (setq visible-bell t)
+  (appt-activate t)
+
+  ;; Automatically mark diary entries
+  (setq calendar-mark-diary-entries-flag t)
+#+end_src
+
+*** Savehist (history of command in M:)
+#+begin_src emacs-lisp
+  (use-package savehist
+    :straight nil
+    :init
+    (setq savehist-file
+  	(expand-file-name "savehist" my-data-directory))
+    :config
+    (savehist-mode 1))
+#+end_src
+
+*** Saveplaces (cursor position)
+#+begin_src emacs-lisp
+  (use-package saveplace
+    :straight nil
+    :init
+    (setq save-place-file
+  	(expand-file-name "places" my-data-directory))
+    :config
+    (save-place-mode 1))
+#+end_src
+
+** Custom Made
+*** Custom Modeline
+#+begin_src emacs-lisp
+  ;; (line-number-mode 1)
+  ;; (column-number-mode 1)
+
+  ;; ;; buffer-name
+  ;; (defface my-modline-background
+  ;;   '((t
+  ;;      ;;:background "blue"
+  ;;      :foreground "#E5C07B" :inherit bold))
+  ;;   "face for the buffer name")
+
+  ;; (defun my-modeline-buffer-name-space ()
+  ;;   (format " %s " (buffer-name)))
+
+  ;; (defvar-local my-modeline-buffer-name
+  ;;     '(:eval
+  ;;       (propertize (my-modeline-buffer-name-space) 'face 'my-modline-background)
+  ;;       ;;(propertize (buffer-name) 'face 'my-modline-background)
+  ;;       ))
+  ;; (put 'my-modeline-buffer-name 'risky-local-variable t)
+
+
+
+
+  ;; ;; major-mode
+  ;; (defun my-modeline-major-mode-name ()
+  ;;   "Returns capatalized major mode as a string"
+  ;;   (capitalize (symbol-name major-mode)))
+
+  ;; (defvar-local my-modeline-major-mode
+  ;;     '(:eval
+  ;;       (when (mode-line-window-selected-p)
+  ;;         ;;(propertize (capitalize (symbol-name major-mode)) 'face '(:weight bold :foreground "blue"))
+  ;;         (list
+  ;;          (propertize "𝜆" 'face 'shadow)
+  ;;          " "
+  ;;          (propertize
+  ;;           (my-modeline-major-mode-name)
+  ;;           'face '(:weight bold :foreground "white"))))))
+
+  ;; (put 'my-modeline-major-mode 'risky-local-variable t)
+
+
+  ;; ;; ;; buffer modified
+  ;; ;; (defvar-local my-modeline-modified
+  ;; ;;     '(:eval
+  ;; ;;       (when (buffer-modified-p)
+  ;; ;;     	(propertize " * " 'face '(:foreground "red" :weight bold)))))
+  ;; ;; (put 'my-modeline-modified 'risky-local-variable t)
+
+
+  ;; ;; ;; TRAMP
+  ;; ;; (defvar-local my-modeline-remote
+  ;; ;;     '(:eval
+  ;; ;;       (when (mode-line-window-selected-p)
+  ;; ;;     	(when (file-remote-p default-directory)
+  ;; ;;     	  (propertize " # " 'face '(:foreground "orange"))))))
+  ;; ;; (put 'my-modeline-remote 'risky-local-variable t)
+
+
+  ;; ;; ;; emacsclient
+  ;; ;; (defvar-local my-modeline-client
+  ;; ;;     '(:eval
+  ;; ;;       (when (mode-line-window-selected-p)
+  ;; ;;     	(when (daemonp)
+  ;; ;;     	  (propertize " @ " 'face '(:foreground "green"))))))
+  ;; ;; (put 'my-modeline-client 'risky-local-variable t)
+
+
+
+  ;; ;; evil
+  ;; (defun my-modeline-evil-state ()
+  ;;   (when (bound-and-true-p evil-local-mode)
+  ;;     (let* ((state evil-state)
+  ;;            (label (pcase state
+  ;;                     ('normal "N")
+  ;;                     ('insert "I")
+  ;;                     ('visual "V")
+  ;;                     ('replace "R")
+  ;;                     ('operator "O")
+  ;;                     ('motion "M")
+  ;;                     ('emacs "E")))
+  ;;            (face (pcase state
+  ;;                    ('normal '(:background "blue" :foreground "black" :weight bold))
+  ;;                    ('insert '(:background "gray" :foreground "white" :weight bold))
+  ;;                    ('visual '(:background "orange" :foreground "black" :weight bold))
+  ;;                    ('replace '(:background "red" :foreground "white" :weight bold))
+  ;;                    (_ '(:background "#c6a0f6" :foreground "white")))))
+  ;;       (propertize (format " %s " label) 'face face))))
+
+
+  ;; (defvar-local my-modeline-evil
+  ;;     '(:eval
+  ;;       (when (mode-line-window-selected-p)
+  ;;         (my-modeline-evil-state))))
+  ;; (put 'my-modeline-evil 'risky-local-variable t)
+
+  ;; ;;position
+  ;; ;; (defvar-local my-modeline-position
+  ;; ;;     '(:eval
+  ;; ;;       (when (mode-line-window-selected-p)
+  ;; ;;     	(propertize
+  ;; ;;     	 (format-mode-line "%l:%c(%p)")
+  ;; ;;     	 'face 'shadow))))
+
+  ;; ;; (defvar-local my-modeline-position
+  ;; ;;     '(:eval
+  ;; ;;       (when (mode-line-window-selected-p)
+  ;; ;;         (propertize
+  ;; ;;          (concat
+  ;; ;;           (format-mode-line "%l:%c")
+  ;; ;;           "("
+  ;; ;;           (format-mode-line "%p")
+  ;; ;;           ")")
+  ;; ;;          'face 'shadow))))
+
+  ;; (defvar-local my-modeline-position
+  ;;     '(:eval
+  ;;       (when (mode-line-window-selected-p)
+  ;;         (let* ((pos (format-mode-line "%p"))
+  ;;                (pos-escaped
+  ;;                 (replace-regexp-in-string
+  ;;                  "%" "%%" pos)))
+  ;;           (propertize
+  ;;            (concat
+  ;;             (format-mode-line "%l:%c")
+  ;;             "("
+  ;;             pos-escaped
+  ;;             ")")
+  ;;            'face 'shadow)))))
+  ;; (put 'my-modeline-position 'risky-local-variable t)
+
+
+  ;; ;; mode-line
+  ;; (setq-default mode-line-format
+  ;;               '("%e"
+  ;;           	my-modeline-evil
+  ;;     		" "
+  ;;           	;; my-modeline-modified
+  ;;           	;; my-modeline-remote
+  ;;           	;; my-modeline-client
+  ;;     		;; mode-line-mule-info
+  ;;     		;; mode-line-modified    ;; replaces my-modeline-modified
+  ;;     		;; mode-line-remote      ;; replaces my-modeline-remote
+  ;;     		;; mode-line-client      ;; replaces my-modeline-client
+
+  ;; 		(:eval
+  ;; 		 (propertize
+  ;; 		  (format-mode-line mode-line-mule-info)
+  ;; 		  'face 'shadow))
+
+  ;; 		(:eval
+  ;; 		 (propertize
+  ;; 		  (format-mode-line mode-line-modified)
+  ;; 		  'face 'shadow))
+
+  ;; 		(:eval
+  ;; 		 (propertize
+  ;; 		  (format-mode-line  mode-line-remote)
+  ;; 		  'face 'shadow))
+
+  ;; 		(:eval
+  ;; 		 (propertize
+  ;; 		  (format-mode-line mode-line-client)
+  ;; 		  'face 'shadow))
+
+  ;;           	my-modeline-buffer-name
+
+  ;;           	;;(:eval (propertize " " 'display '(space :align-to right)))
+  ;;           	;; push everything after this to the right
+  ;;       		;; (:eval (propertize " " 'display
+  ;;       		;; 		   `(space :align-to
+  ;;       		;; 			   (- right-fringe
+  ;;                 ;;                                 ,(+ 2 (length (format-mode-line my-modeline-major-mode)))))))
+
+  ;;     		(:eval
+  ;;     		 (let* ((right-str
+  ;;     			 (format-mode-line
+  ;;     			  (list my-modeline-position
+  ;;     				" "
+  ;;     				my-modeline-major-mode)))
+  ;;     			(right-width
+  ;;     			 (string-width right-str)))
+  ;;     		   (propertize " "
+  ;;     			       'display
+  ;;     			       `(space :align-to
+  ;;     				       (- right-fringe
+  ;;     					  ,right-width)))))
+
+  ;;       		my-modeline-position
+  ;;       		" "
+  ;;           	my-modeline-major-mode))
+
+
+  ;; ;; (setq mode-line-format nil)
+  ;; ;; (kill-local-variable 'mode-line-format)
+
+  ;; ;; Push the new format to ALL existing buffers
+  ;; (dolist (buf (buffer-list))
+  ;;   (with-current-buffer buf
+  ;;     (kill-local-variable 'mode-line-format)))
+  ;; ;; What it does: Kills the buffer-local value in every buffer, forcing
+  ;; ;;them to fall back to the new setq-default value.
+#+end_src
+
+- what was happening
+  When :eval returns a string, the mode-line engine processes it again
+   for % sequences. So "97%)" — the %) gets interpreted as a format
+    code and the ) gets eaten.
+    
+  format-mode-line "%p"  →  "97%"
+                               ↑
+                    mode-line sees this % and
+                    tries to read %) as a format
+                    code, eating the closing paren
+
+replace-regexp-in-string → "97%%"
+                               ↑↑
+                    now mode-line renders %% as
+                    a literal % and leaves ) alone
+
+final output → "1399:0(97%)"  ✓
+
+*** wolfer-kill-all-buffers
+#+begin_src emacs-lisp
+  (defun wolfer-kill-all-buffers ()
+    "Kill all buffers without confirmation."
+    (interactive)
+    (mapc #'kill-buffer (buffer-list))
+    (message "All buffers killed!"))
+#+end_src
+
+*** wolfer-reload-init-file
+#+begin_src emacs-lisp
+  (defun wolfer-reload-init-file ()
+  "Reload Emacs config."
+  (interactive)
+  (load-file
+   (expand-file-name "init.el" user-emacs-directory))
+  (message "Reloaded init.el"))
+#+end_src
+
+*** Insert relative Path
+#+begin_src emacs-lisp
+  (defun wolfer-insert-file-path ()
+    "Prompt for a file and insert its path at point."
+    (interactive)
+    (let ((file (read-file-name "Insert file path: ")))
+      (insert file)))
+#+end_src
+
++ full path version
+  #+begin_src emacs-lisp
+    ;; (defun wolfer-insert-file-path ()
+    ;;   "Insert a file path at point."
+    ;;   (interactive)
+    ;;   (insert (expand-file-name
+    ;;            (read-file-name "Insert file path: "))))
+  #+end_src
+
+*** wolfer-copy-file-name
+#+begin_src emacs-lisp
+  (defun wolfer-copy-file-name ()
+    "Copy current buffer file’s path to kill ring."
+    (interactive)
+    (when-let ((file (buffer-file-name)))
+      (kill-new file)
+      (message file)))
+#+end_src
+
+*Note*
+#+begin_src emacs-lisp
+  ;; when-let extends to
+  ;; (let ((file (buffer-file-name)))
+  ;;   (when file
+  ;;     (kill-new file)
+  ;;     (message file)))
+#+end_src
+
+*** wolfer-copy-file-directory
++ since emacs knows the directory of the current buffer in
+  function default-directory we can do
+  #+begin_src emacs-lisp
+    (defun wolfer-copy-file-directory ()
+      "Copy the current buffer directory path to kill ring."
+      (interactive)
+      (when default-directory
+        (kill-new default-directory)
+        (message default-directory)))
+  #+end_src
+
+  + We can also get the dir by
+    ~(file-name-directory (buffer-file-name))~
+    #+begin_src emacs-lisp
+      ;; (defun wolfer-copy-file-directory ()
+      ;;   "Copy the current buffer's directory path to the kill ring."
+      ;;   (interactive)
+      ;;   (when-let ((file (buffer-file-name)))
+      ;;     (let ((dir (file-name-directory file)))
+      ;;       (kill-new dir)
+      ;;       (message dir))))
+    #+end_src
+
+*** wolfer-toggle-window-split
+#+begin_src emacs-lisp
+  (defun wolfer-toggle-window-split ()
+    "Toggle between horizontal and vertical split for exactly two windows."
+    (interactive)
+    (unless (= (count-windows) 2)
+      (user-error "Exactly two windows required"))
+    (let* ((w1 (selected-window))
+  	 (w2 (next-window))
+  	 (b1 (window-buffer w1))
+  	 (b2 (window-buffer w2))
+  	 (e1 (window-edges w1))
+  	 (e2 (window-edges w2))
+  	 (horizontal
+            (= (car e1) (car e2))))
+      (delete-other-windows)
+      (if horizontal
+  	(split-window-horizontally)
+        (split-window-vertically))
+      (set-window-buffer (selected-window) b1)
+      (set-window-buffer (next-window) b2)))
+#+end_src
+
+*** wolfer-delete-region
+#+begin_src emacs-lisp
+  (defun wolfer-delete-region ()
+    "delete region without killing it"
+    (interactive)
+    (when (use-region-p)
+      (let ((inhibit-redisplay t)
+            (select-enable-clipboard nil)
+            (select-enable-primary nil)
+            (xterm-enable-clipboard nil))
+        (delete-region (region-beginning) (region-end))
+        (deactivate-mark))))
+#+end_src
+
+*** wolfer-clear-kill-ring
+#+begin_src emacs-lisp
+  (defun wolfer-clear-kill-ring ()
+    "Clear the kill-ring"
+    (interactive)
+    (setq kill-ring nil
+  	kill-ring-yank-pointer nil))
+#+end_src
+
+*Note*
+note   kill-ring = (A B C D)
+                    ↑
+             kill-ring-yank-pointer
+Ring = memory
+Pointer = where Emacs thinks it is in that memory
+
+*** wolfer-hide 
+#+begin_src emacs-lisp
+  (defun wolfer-hide ()
+    "Hide all dotfiles (.*) in the current Dired buffer."
+    (interactive)
+    (when (derived-mode-p 'dired-mode)
+      (dired-mark-files-regexp "^\\.")
+      (dired-do-kill-lines)))
+#+end_src
+
+*** wolfer-dired-to-delete
+#+begin_src emacs-lisp
+  (defun wolfer-dired-to-delete ()
+    "Permanently delete files in Dired, bypassing trash."
+    (interactive)
+    (let ((delete-by-moving-to-trash nil))
+      (call-interactively #'dired-do-delete)))
+#+end_src
+
+*** wolfer-quotes
+#+begin_src emacs-lisp
+    ;;  (defun wolfer/org-smart-quotes ()
+    ;;   "Enable smart quotes in Org prose but disable in code contexts."
+    ;;   (let ((context (org-element-context)))
+    ;;     (if (or (org-in-src-block-p)
+    ;; 	    (memq (org-element-type context) '(code verbatim)))
+    ;; 	(electric-quote-local-mode -1)
+    ;;       (electric-quote-local-mode 1))))
+  ;;-------
+    ;; (defun wolfer/org-smart-quotes ()
+    ;;   "Smart quotes and backtick handling.
+    ;; In src blocks and code spans: disable electric-quote
+    ;; and disable backtick pairing.
+    ;; In prose: enable electric-quote, no backtick pairing."
+    ;;   (let* ((context (org-element-context))
+    ;; 	 (in-code (or (org-in-src-block-p)
+    ;; 		      (memq
+    ;; 		       (org-element-type context)
+    ;; 		       '(code verbatim)))))
+    ;;     (if in-code
+    ;; 	(progn
+    ;; 	  (electric-quote-local-mode -1)
+    ;; 	  (setq-local electric-pair-pairs
+    ;; 		      (assq-delete-all
+    ;; 		       ?` electric-pair-pairs))
+    ;; 	  (setq-local electric-pair-text-pairs
+    ;; 		      (assq-delete-all
+    ;; 		       ?` electric-pair-text-pairs)))
+    ;;       (progn
+    ;; 	(electric-quote-local-mode 1)
+    ;; 	(setq-local electric-pair-pairs
+    ;; 		    (append electric-pair-pairs
+    ;; 			    '((?` . ?`))))))))
+    ;; (add-hook 'org-mode-hook
+    ;; 	  (lambda ()
+    ;; 	    (add-hook
+    ;; 	     'post-command-hook
+    ;; 	     #'wolfer/org-smart-quotes
+    ;; 	     nil t)))
+
+    ;; (add-hook 'prog-mode-hook
+    ;;         (lambda ()
+    ;;           (electric-quote-local-mode -1)))
+
+    ;; (add-hook 'markdown-mode-hook
+    ;;         (lambda ()
+    ;;           (electric-quote-local-mode -1)))
+#+end_src
+
+*** wolfer-new-line-below
+#+begin_src emacs-lisp
+  (defun wolfer-new-line-below ()
+    "Open a new line below current line, stay in insert state."
+    (interactive)
+    (end-of-visual-line)
+    (newline-and-indent))
+#+end_src
+
+*** wolfer-new-line-above
+#+begin_src emacs-lisp
+  (defun wolfer-new-line-above ()
+    "Open a new line above current line, stay in insert state."
+    (interactive)
+    (beginning-of-visual-line)
+    (newline-and-indent)
+    (forward-line -1)
+    (indent-according-to-mode))
+#+end_src
+
+*** wolfer-sudo-edit
+#+begin_src emacs-lisp
+  (defun wolfer-sudo-edit (&optional arg)
+    (interactive "P")
+    (if arg
+        (find-file (concat "/sudo:root@localhost:"
+  			 (read-file-name "File: ")))
+      (when buffer-file-name
+        (find-alternate-file
+         (concat "/sudo:root@localhost:"
+                 buffer-file-name)))))
+#+end_src
+
+*** wolfer-delete-lines
+#+begin_src emacs-lisp
+  (defun wolfer-delete-line (n)
+    "Delete N lines."
+    (interactive "p")
+    (delete-region
+     (line-beginning-position)
+     (save-excursion
+       (forward-line n)
+       (point))))
+#+end_src
+
+*** wolfer-lines-to table
+#+begin_src emacs-lisp
+  (defun wolfer-lines-to-table (beg end cols)
+    "Convert selected lines into a markdown table with COLS columns."
+    (interactive "r\nnColumns per row: ")
+    (let* ((text (buffer-substring-no-properties beg end))
+  	 (lines (split-string text "\n" t))
+  	 (result ""))
+
+      (while lines
+        (setq result
+              (concat result
+                      "| "
+                      (mapconcat #'identity
+                                 (seq-take lines cols)
+                                 " | ")
+                      " |\n"))
+        (setq lines (nthcdr cols lines)))
+
+      (delete-region beg end)
+      (goto-char beg)
+      (insert result)))
+#+end_src
+
+*** wolfer delete old dailies
+#+begin_src emacs-lisp
+  (defun wolfer/org-roam-delete-old-dailies (&optional days)
+  "Delete Org-roam dailies older than DAYS after showing a preview."
+  (interactive "P")
+  (let* ((days (or days 30))
+	 (dir (expand-file-name
+	       org-roam-dailies-directory
+	       org-roam-directory))
+         (cutoff (time-subtract (current-time)
+                                (days-to-time days)))
+         (files nil))
+    ;; Collect files
+    (dolist (file (directory-files dir t
+                                   "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\.org$"))
+      (when (time-less-p (nth 5 (file-attributes file)) cutoff)
+        (push file files)))
+
+    (setq files (sort files #'string<))
+
+    ;; Preview
+    (with-current-buffer (get-buffer-create "*Old Org-roam Dailies*")
+      ;; Make this a special buffer
+      (special-mode)
+      ;; special-mode makes the buffer read-only,
+      ;; so temporarily disable that.
+      (let ((inhibit-read-only t))
+	(erase-buffer)
+	(insert (format "The following %d file(s) will be deleted:\n\n"
+			(length files)))
+	(dolist (file files)
+          (insert (file-name-nondirectory file) "\n"))
+	(goto-char (point-min))
+	(display-buffer (current-buffer)))
+
+      ;; Confirmation
+      (when (and files
+		 (yes-or-no-p
+                  (format "Delete these %d files? " (length files))))
+	(mapc #'delete-file files)
+	(message "Deleted %d daily files." (length files))))))
+#+end_src
+
+* KBD
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle ~/.config/emacs-straight/init.el
+:END:
+** Evil kbd
+#+begin_src emacs-lisp
+  (with-eval-after-load 'evil
+      (define-key evil-insert-state-map (kbd "C-y") #'yank)
+      ;;(define-key evil-normal-state-map (kbd "C-n") #'next-line)   - u r evil so act like one
+      ;;(define-key evil-normal-state-map (kbd "C-p") #'previous-line)
+      (define-key evil-insert-state-map (kbd "C-v") #'scroll-up-command)
+      (define-key evil-insert-state-map (kbd "C-a") #'move-beginning-of-line)
+      (define-key evil-insert-state-map (kbd "C-e") #'move-end-of-line)
+      (define-key evil-insert-state-map (kbd "C-w") #'kill-region)
+      (define-key evil-normal-state-map (kbd "C-r") #'isearch-backward)
+      (define-key evil-insert-state-map (kbd "C-r") #'isearch-backward)
+      (define-key evil-insert-state-map (kbd "C-n") #'next-line)
+      (define-key evil-insert-state-map (kbd "C-p") #'previous-line)
+      (define-key evil-insert-state-map (kbd "C-k") #'kill-line)
+      (define-key evil-insert-state-map (kbd "M-o") #'wolfer-new-line-below)
+  (define-key evil-insert-state-map (kbd "M-O") #'wolfer-new-line-above))
+    ;; C-n & C-p are redefined because just use Corfu and Cape
+#+end_src
+
+** Corfu kbd
+#+begin_src emacs-lisp
+  (with-eval-after-load 'corfu
+  (define-key corfu-map (kbd "C-n") #'corfu-next)
+  (define-key corfu-map (kbd "C-p") #'corfu-previous)
+  (define-key corfu-map (kbd "C-g") #'corfu-quit))
+#+end_src
+
+** Defining Prefix Key
+#+begin_src emacs-lisp
+(define-prefix-command 'wolfer-do-map)
+(define-prefix-command 'wolfer-copy-check-map)
+(define-prefix-command 'wolfer-open-map)
+(define-prefix-command 'wolfer-move-mode-make-map)
+(define-prefix-command 'wolfer-window-map)
+(define-prefix-command 'wolfer-insert-map)
+#+end_src
+
+*** Key mapping
+#+begin_src emacs-lisp
+(global-set-key (kbd "C-c d") 'wolfer-do-map)
+(global-set-key (kbd "C-c c") 'wolfer-copy-check-map)
+(global-set-key (kbd "C-c o") 'wolfer-open-map)
+(global-set-key (kbd "C-c m") 'wolfer-move-mode-make-map)
+(global-set-key (kbd "C-c w") 'wolfer-window-map)
+(global-set-key (kbd "C-c i") 'wolfer-insert-map)
+#+end_src
+
+*** DO
+#+begin_src emacs-lisp
+  (define-key wolfer-do-map (kbd "e") #'eval-buffer)
+  (define-key wolfer-do-map (kbd "q") #'save-buffers-kill-emacs)
+  (define-key wolfer-do-map (kbd "s") #'consult-line)
+  (define-key wolfer-do-map (kbd "b") #'consult-buffer)
+  (define-key wolfer-do-map (kbd "B") #'revert-buffer)
+  (define-key wolfer-do-map (kbd "g") #'consult-ripgrep)
+  (define-key wolfer-do-map (kbd "i") #'consult-imenu)
+  (define-key wolfer-do-map (kbd "f") #'consult-find)
+  (define-key wolfer-do-map (kbd "k") #'wolfer-kill-all-buffers)
+  (define-key wolfer-do-map (kbd "r") #'wolfer-reload-init-file)
+  (define-key wolfer-do-map (kbd "d") #'wolfer-delete-region)
+  (define-key wolfer-do-map (kbd "D") #'wolfer-clear-kill-ring)
+  (define-key wolfer-do-map (kbd "l") #'wolfer-hydra/body)
+  (define-key wolfer-do-map (kbd "p") #'pulsar-pulse-line)
+  (define-key wolfer-do-map (kbd "h") #'pulsar-highlight-permanently)
+  (define-key wolfer-do-map (kbd "H") #'pulsar-highlight-permanently-remove)
+  (define-key wolfer-do-map (kbd "R") #'multi-vterm-rename-buffer)
+  (define-key wolfer-do-map (kbd "/") 'hippie-expand)
+  (define-key wolfer-do-map (kbd "SPC") #'set-mark-command)
+  (define-key wolfer-do-map (kbd "S") #'wolfer-sudo-edit)
+#+end_src
+
+*** Copy
+#+begin_src emacs-lisp
+(define-key wolfer-copy-check-map (kbd "c") #'check-parens)
+(define-key wolfer-copy-check-map (kbd "p") #'wolfer-copy-file-name)
+(define-key wolfer-copy-check-map (kbd "P") #'wolfer-copy-file-directory)
+#+end_src
+
+*** Open
+#+begin_src emacs-lisp
+  (define-key wolfer-open-map (kbd "t") #'treemacs)
+  (define-key wolfer-open-map (kbd "a") #'org-agenda)
+  (define-key wolfer-open-map (kbd "T") #'multi-vterm)
+  (define-key wolfer-open-map (kbd "v") #'vterm)
+  (define-key wolfer-open-map (kbd "c") #'calendar)
+  (define-key wolfer-open-map (kbd "o") #'consult-outline)
+#+end_src
+
+*** Mode
+#+begin_src emacs-lisp
+(define-key wolfer-move-mode-make-map (kbd "v") #'visual-line-mode)
+(define-key wolfer-move-mode-make-map (kbd "r") #'org-mark-ring-goto)
+;;(define-key wolfer-move-mode-make-map (kbd "C-c m t") #'toggle-truncate-lines) <- C-x x t
+(define-key wolfer-move-mode-make-map (kbd "o") #'org-view-mode)
+(define-key wolfer-move-mode-make-map (kbd "m") #'org-modern-mode)
+(define-key wolfer-move-mode-make-map (kbd "k") #'windmove-up)
+(define-key wolfer-move-mode-make-map (kbd "j") #'windmove-down)
+(define-key wolfer-move-mode-make-map (kbd "l") #'windmove-right)
+(define-key wolfer-move-mode-make-map (kbd "h") #'windmove-left)
+(define-key wolfer-move-mode-make-map (kbd "L") #'move-to-window-line)
+(define-key wolfer-move-mode-make-map (kbd "t") #'wolfer-lines-to-table)
+#+end_src
+
+*** Window
+#+begin_src emacs-lisp
+(define-key wolfer-window-map (kbd "k") #'windmove-swap-states-up)
+(define-key wolfer-window-map (kbd "j") #'windmove-swap-states-down)
+(define-key wolfer-window-map (kbd "h") #'windmove-swap-states-left)
+(define-key wolfer-window-map (kbd "l") #'windmove-swap-states-right)
+(define-key wolfer-window-map (kbd "o") #'treemacs-select-window)
+(define-key wolfer-window-map (kbd "|") #'wolfer-toggle-window-split)
+(define-key wolfer-window-map (kbd "n") #'multi-vterm-next)
+(define-key wolfer-window-map (kbd "p") #'multi-vterm-prev)
+#+end_src
+
+*** Insert
+#+begin_src emacs-lisp
+(define-key wolfer-insert-map (kbd "p")   #'wolfer-insert-file-path)
+;; multi cursor keybindings
+(define-key wolfer-insert-map (kbd ">")   #'mc/mark-next-like-this)
+(define-key wolfer-insert-map (kbd "<")   #'mc/mark-previous-like-this)
+(define-key wolfer-insert-map (kbd "C-<") #'mc/mark-all-like-this)
+(define-key wolfer-insert-map (kbd "l")   #'mc/edit-lines)
+#+end_src
+
+*** Wolfer Custom
+#+begin_src emacs-lisp
+(global-set-key (kbd "M-n") 'scroll-up-line)
+(global-set-key (kbd "M-p") 'scroll-down-line)
+
+(global-set-key (kbd "M-g o") #'wolfer-new-line-below)
+(global-set-key (kbd "M-g O") #'wolfer-new-line-above)
+(global-set-key (kbd "M-g d") #'wolfer-delete-line)
+
+(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd "z h") #'wolfer-hide))
+(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd "z d") #'wolfer-dired-to-delete))
+#+end_src
+
+* Old KBD
+*** Do
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-c d e") #'eval-buffer)
+  (global-set-key (kbd "C-c d q") #'save-buffers-kill-emacs)
+  (global-set-key (kbd "C-c d s") #'consult-line)
+  (global-set-key (kbd "C-c d b") #'consult-buffer)
+  (global-set-key (kbd "C-c d g") #'consult-ripgrep)
+  (global-set-key (kbd "C-c d i") #'consult-imenu)
+  (global-set-key (kbd "C-c d f") #'consult-find)
+  (global-set-key (kbd "C-c d k") #'wolfer-kill-all-buffers)
+  (global-set-key (kbd "C-c d r") #'wolfer-reload-init-file)
+  (global-set-key (kbd "C-c d d") #'wolfer-delete-region)
+  (global-set-key (kbd "C-c d D") #'wolfer-clear-kill-ring)
+  (global-set-key (kbd "C-c d l") #'wolfer-hydra/body)
+  (global-set-key (kbd "C-c d p") #'pulsar-pulse-line)
+  (global-set-key (kbd "C-c d R") #'multi-vterm-rename-buffer)
+  (global-set-key (kbd "C-c d /") 'hippie-expand)
+#+end_src
+
+*** Check/Copy
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-c c c") #'check-parens)
+  (global-set-key (kbd "C-c c p") #'wolfer-copy-file-name)
+  (global-set-key (kbd "C-c c P") #'wolfer-copy-file-directory)
+#+end_src
+
+*** Open
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-c o t") #'treemacs)
+  (global-set-key (kbd "C-c o a") #'org-agenda)
+  (global-set-key (kbd "C-c o T") #'multi-vterm)
+  (global-set-key (kbd "C-c o v") #'vterm)
+  (global-set-key (kbd "C-c o c") #'consult-outline)
+#+end_src
+
+*** Move/Mode
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-c m v") #'visual-line-mode)
+  (global-set-key (kbd "C-c m r") #'org-mark-ring-goto)
+  ;;(global-set-key (kbd "C-c m t") #'toggle-truncate-lines) <- C-x x t
+  (global-set-key (kbd "C-c m o") #'org-view-mode)
+  (global-set-key (kbd "C-c m m") #'org-modern-mode)
+  (global-set-key (kbd "C-c m k") #'windmove-up)
+  (global-set-key (kbd "C-c m j") #'windmove-down)
+  (global-set-key (kbd "C-c m l") #'windmove-right)
+  (global-set-key (kbd "C-c m h") #'windmove-left)
+  (global-set-key (kbd "C-c m L") #'move-to-window-line)
+#+end_src
+
+*** Window
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-c w k") #'windmove-swap-states-up)
+  (global-set-key (kbd "C-c w j") #'windmove-swap-states-down)
+  (global-set-key (kbd "C-c w h") #'windmove-swap-states-left)
+  (global-set-key (kbd "C-c w l") #'windmove-swap-states-right)
+  (global-set-key (kbd "C-c w o") #'treemacs-select-window)
+  (global-set-key (kbd "C-c w |") #'wolfer-toggle-window-split)
+  (global-set-key (kbd "C-c w n") #'multi-vterm-next)
+  (global-set-key (kbd "C-c w p") #'multi-vterm-prev)
+#+end_src
+
+*** Insert
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-c i p")   #'wolfer-insert-file-path)
+  ;; multi cursor keybindings
+  (global-set-key (kbd "C-c i >")   #'mc/mark-next-like-this)
+  (global-set-key (kbd "C-c i <")   #'mc/mark-previous-like-this)
+  (global-set-key (kbd "C-c i C-<") #'mc/mark-all-like-this)
+  (global-set-key (kbd "C-c i l")   #'mc/edit-lines)
+#+end_src
+*** Proper name of prefix keys
+#+begin_src emacs-lisp
+  (which-key-add-key-based-replacements
+  "C-c d" "do"
+  "C-c c" "copy"
+  "C-c o" "open"
+  "C-c m" "move/mode"
+  "C-c w" "window"
+  "C-c i" "insert")
+#+end_src
+*** Scrolling
+#+begin_src emacs-lisp
+  (global-set-key (kbd "M-n") 'scroll-up-line)
+  (global-set-key (kbd "M-p") 'scroll-down-line)
+#+end_src
+
+* .gnus.el
+#+begin_src emacs-lisp
+  ;; ===========================
+;; GNUS CONFIGURATION
+;; ===========================
+
+;; --- Primary select method ---
+;; This is your main mail source
+(setq gnus-select-method
+  '(nnimap "gmail"
+     (nnimap-address "imap.gmail.com")
+     (nnimap-server-port 993)
+     (nnimap-stream ssl)
+     (nnimap-authinfo-file "~/.authinfo.gpg")))
+
+;; --- Sending mail ---
+(setq message-send-mail-function
+        'smtpmail-send-it
+      smtpmail-smtp-server   "smtp.gmail.com"
+      smtpmail-smtp-service  587
+      smtpmail-stream-type   'starttls
+      smtpmail-auth-credentials "~/.authinfo.gpg")
+
+;; --- Identity ---
+(setq user-full-name    "Wolfer"
+      user-mail-address "wolferwolford@gmail.com")
+
+;; --- Usenet (optional, for newsgroups) ---
+;; Uncomment when you want to explore Usenet
+;; (add-to-list 'gnus-secondary-select-methods
+;;   '(nntp "news.gmane.io"))
+
+(add-to-list 'gnus-secondary-select-methods
+  '(nntp "news.eternal-september.org"
+     (nntp-port-number 119)))
+
+(add-to-list 'gnus-secondary-select-methods
+  '(nntp "news.gwene.org"
+     (nntp-port-number 119)))
+
+;; --- UI tweaks ---
+;; Show full email addresses not just names
+(setq gnus-summary-line-format
+      "%U%R%z%I%(%[%4L: %-20,20f%]%) %s\n")
+
+;; Don't ask to subscribe to new groups
+(setq gnus-subscribe-newsgroup-method
+  'gnus-subscribe-interactively)
+
+;; Show threads (conversations grouped together)
+(setq gnus-thread-sort-functions
+  '(gnus-thread-sort-by-most-recent-date))
+
+;; Don't show groups with zero unread by default
+(setq gnus-permanently-visible-groups nil)
+
+;; How many articles to fetch at once
+(setq gnus-large-newsgroup 500)
+
+;; Cache articles locally for speed
+(setq gnus-use-cache t)
+
+;; ;; Notification
+;; ;; --- Notifications ---
+;; (require 'gnus-notifications)
+
+;; ;; only switching on the Notification
+;; (setq gnus-notifications-use-notifications t)
+
+;; ;; minimum delay between notifications (seconds)
+;; (setq gnus-notifications-minimum-level 1)
+
+;; (setq gnus-notifications-groups
+;;   '("INBOX"))
+
+;; ;; actually RUNS it when new mail arrives
+;; (add-hook 'gnus-after-getting-new-news-hook
+;;           'gnus-notifications)
+
+;; ;; ;; gnus to use D-Bus notify
+;; ;; (setq gnus-notifications-use-actions nil)
+
+
+;;--------- custom notification -----------------
+;; --- Notifications ---
+(defun my/gnus-new-mail-notify ()
+  (let ((unread
+    (gnus-group-unread "INBOX")))
+    (when (and unread
+               (> unread 0))
+      (shell-command
+        (format
+          "notify-send 'Gnus - New Mail' \
+           '%d unread in INBOX'"
+          unread)))))
+
+(add-hook
+  'gnus-after-getting-new-news-hook
+  'my/gnus-new-mail-notify)
+
+;; --- Auto sync mail ---
+(require 'gnus-demon)
+
+(defun my/sync-mail ()
+  (interactive)
+  (gnus-demon-scan-news))
+
+(gnus-demon-add-handler
+  'my/sync-mail 5 nil)
+
+(gnus-demon-init)
+
+;; (define-key gnus-group-mode-map
+;; 	    (kbd "<f5>") 'my/sync-mail)
+#+end_src
+
+* mbsyncrc
+#+begin_src conf
+  IMAPAccount gmail
+  Host imap.gmail.com
+  User xxxx@gmail.com
+  PassCmd "gpg --quiet --decrypt ~/.authinfo.gpg | awk '/machine imap.gmail.com/ {for(i=1;i<=NF;i++) if($i==\"password\") print $(i+1)}'"
+  TLSType IMAPS
+  CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+  IMAPStore gmail-remote
+  Account gmail
+
+  MaildirStore gmail-local
+  SubFolders Verbatim
+  Path ~/Maildir/gmail/
+  Inbox ~/Maildir/gmail/Inbox
+
+  Channel gmail
+  Far :gmail-remote:
+  Near :gmail-local:
+  Patterns * ![Gmail]* "[Gmail]/Sent Mail" "[Gmail]/Trash" "[Gmail]/Starred" "[Gmail]/Drafts" "[Gmail]/All Mail"
+  Create Both
+  Expunge Both
+  SyncState *
+#+end_src
+
+* .mail_pass.gpg
+#+begin_src authinfo
+  machine imap.gmail.com login xxxx@gmail.com password xxxxxxxxxxxxxxxx port 993
+  machine smtp.gmail.com login xxxx@gmail.com password xxxxxxxxxxxxxxxx port 587
+  machine news.eternal-september.org login <user_name> password xxxxxxxxx port 119
+#+end_src
+
+* How to download PKG from GIT
+
+1. manually cloning a repo
+  
+#+begin_src emacs-lisp
+  ;; If want to load pkg manually from git
+  ;;git clone https://github.com/greduan/emacs-theme-gruvbox.git ~/.config/terminal_app/vanilla-emacs.d/themes/gruvbox
+  ;; (add-to-list 'custom-theme-load-path ;;"~/.config/terminal_app/vanilla-emacs.d/themes/gruvbox/gruvbox-dark-soft-theme.el")
+  ;; (load-theme 'gruvbox t)
+  ;;git clone https://github.com/spudlyo/clipetty.git ~/.config/terminal_app/vanilla-emacs.d/pkg
+  ;; (add-to-list 'load-path "~/.config/terminal_app/vanilla-emacs.d/pkg")
+#+end_src
+
+2. use emacs built in package-vc-install
+
+  #+begin_src emacs-lisp
+    ;; Run this once manually: M-x eval-expression
+    (package-vc-install
+     '(app-launcher
+       :url
+       "https://github.com/SebastienWae/\
+    app-launcher"))
+  #+end_src
+  
+* How lazy loading works
+Lazy loading works only when nothing references the package yet.
+calling a function
+setting a variable that is autoloaded
+running a hook
+binding a command
+
+:commands   → load when command runs
+:hook       → load when hook triggers
+:bind       → load when key pressed
+:mode       → load when file type opened
+
+* use-package
+*** Rules
+**** Variables → set before enabling the mode
+Modes → enable after variables
++ Example 1
+  (use-package vertico
+  :ensure t
+  :init
+  (setq vertico-cycle t)
+  (vertico-mode))
+  here,
+   1. set vertico-cycle → t
+   2. enable vertico-mode
+   3. vertico loads
+   4. vertico-mode initializes using vertico-cycle = t
++ Example 2
+  (use-package vertico
+  :ensure t
+  :init
+  (vertico-mode)
+  :config
+  (setq vertico-cycle t))
+   here,
+   1. enable vertico-mode
+   2. vertico loads
+   3. vertico initializes using default settings
+   4. THEN vertico-cycle is set
++ Sometimes that still works.
+  Sometimes the mode reads the variable only once during startup.
+**** Immediately Load a PKG
++ use :init
+  :init code runs during startup before the package loads.
+   So Emacs starts reading your config and encounters for example
+   (vertico-mode)
+   But vertico-mode is defined inside the Vertico package.
+   So Emacs must load Vertico right now in order to call that function.
+   
+*** custom
++ Sets defcustom variables via customize-set-variableOnly (var value) pairs
++ :custom is essentially syntactic sugar for:
+  elisp(customize-set-variable 'doom-modeline-height 25)
++ 
+  
+*** init
++ :initRuns before the package loads Any Elisp
+  
+*** config
++ :configRuns after the package loads Any Elisp
+
+*** hook
++ :hook expects a dotted pair, no quotes on the hook name:
+
+
+* How to find built-in pkg
+- ~M-x finder-by-keyword~
+- ~M-x describe-package~
+- ~M-x describe-variable RET package--builtins RET~
+- ~/usr/share/emacs/31.0.50/lisp/~ here every .el file there is a
+  built-in library.
+
+* how to search for languages
+~M-: (treesit-language-available-p 'toml)~ if the language grammer is installed.
+
+  
+* Themes Conf
+** modus
+#+begin_src emacs-lisp
+  ;; theme
+  (setq modus-themes-common-palette-overrides
+        '((comment fg-dim))) 
+  (load-theme 'modus-vivendi-tinted t)
+
+  ;; org
+  ;; ──  Define faces (runs immediately) ───────
+  (defface wolfer-org-bold
+    '((t :weight bold))
+    "Face for org bold.")
+
+  (defface wolfer-org-italic
+    '((t :slant italic))
+    "Face for org italic.")
+
+
+  (with-eval-after-load 'org
+    (set-face-attribute 'org-level-1 nil
+      		      :foreground (modus-themes-get-color-value
+      				   'magenta-warmer)
+      		      :height 1.5
+      		      :weight 'bold)
+    (set-face-attribute 'org-level-2 nil
+      		      :foreground (modus-themes-get-color-value
+      				   'yellow-faint)
+      		      :height 1.4
+      		      :weight 'bold)
+    (set-face-attribute 'org-level-3 nil
+      		      :foreground (modus-themes-get-color-value
+      				   'cyan-warmer)
+      		      :height 1.3 :weight 'bold)
+    (set-face-attribute 'org-level-4 nil :height 1.2 :weight 'bold)
+    (set-face-attribute 'org-level-5 nil
+      		      :foreground (modus-themes-get-color-value
+      				   'fg-dim)
+      		      :height 1.1
+      		      :weight 'bold)
+    (set-face-attribute 'org-level-6 nil :height 1.0 :weight 'bold)
+    (set-face-attribute 'org-level-7 nil :height 1.0 :weight 'bold)
+    (set-face-attribute 'org-level-8 nil :height 1.0 :weight 'bold)
+
+    ;; ──--------- Point org alist to your faces ─────────
+    (setq org-emphasis-alist
+      	'(("*" wolfer-org-bold)
+      	  ("/" wolfer-org-italic)
+      	  ("_" underline)
+      	  ("+" (:strike-through t))
+      	  ("=" org-verbatim verbatim)
+      	  ("~" org-code verbatim))))
+
+  ;; ------------------- for Modus Themes ------------------------------
+  ;; ── Step 3: Colorize everything together ──────────
+  (modus-themes-with-colors
+   (custom-set-faces
+    `(org-code
+      ((t :foreground ,green-faint
+          :background ,bg-green-nuanced)))
+    `(org-verbatim
+      ((t :foreground ,cyan-faint
+          :background ,bg-cyan-nuanced)))
+    `(wolfer-org-bold
+      ((t :foreground ,yellow-faint
+          :weight bold)))
+    `(wolfer-org-italic
+      ((t :foreground ,blue-faint
+          :slant italic)))))
+
+#+end_src
+
+** Drcula
+#+begin_src emacs-lisp
+  (defun wolfer/apply-ui-overrides ()
+    ;; Paren
+    (set-face-attribute 'show-paren-match nil
+    		      :background "#bd93f9"
+    		      :foreground "#f8f8f2"
+    		      :weight 'bold)
+
+    (set-face-attribute 'show-paren-match-expression nil
+    		      :background "#44475a")
+
+    (set-face-attribute 'show-paren-mismatch nil
+    		      :background "#ff5555"
+    		      :foreground "#f8f8f2"
+    		      :weight 'bold)
+
+    ;; Dired
+    ;; (set-face-attribute 'dired-directory nil
+    ;;   :foreground "#61afef"
+    ;;   :weight 'bold))
+    (with-eval-after-load 'dired
+      (set-face-attribute 'dired-directory nil
+                          :foreground "#8be9fd"
+                          :weight 'bold)))
+
+  (load-theme 'dracula t)
+  (wolfer/apply-ui-overrides)
+
+  ;; org
+  (defface wolfer-org-bold
+    '((t :weight bold))
+    "Face for org bold.")
+
+  (defface wolfer-org-italic
+    '((t :slant italic))
+    "Face for org italic.")
+
+  (with-eval-after-load 'org
+    (set-face-attribute 'org-level-1 nil :height 1.5 :weight 'bold)
+    (set-face-attribute 'org-level-2 nil :height 1.4 :weight 'bold)
+    (set-face-attribute 'org-level-3 nil :height 1.3 :weight 'bold)
+    (set-face-attribute 'org-level-4 nil :height 1.2 :weight 'bold)
+    (set-face-attribute 'org-level-5 nil :height 1.1 :weight 'bold)
+    (set-face-attribute 'org-level-6 nil :height 1.0 :weight 'bold)
+    (set-face-attribute 'org-level-7 nil :height 1.0 :weight 'bold)
+    (set-face-attribute 'org-level-8 nil :height 1.0 :weight 'bold)
+
+    ;; ── Step 2: Point org alist to your faces ─────────
+    (setq org-emphasis-alist
+      	'(("*" wolfer-org-bold)
+      	  ("/" wolfer-org-italic)
+      	  ("_" underline)
+      	  ("+" (:strike-through t))
+      	  ("=" org-code verbatim)
+      	  ("~" org-verbatim verbatim))))
+
+  ;; ── Step 3: Colorize everything together ──────────
+
+  (custom-set-faces
+   '(wolfer-org-bold
+     ((t :foreground "#f1fa8c"		; dracula-yellow
+         :weight bold))))
+
+#+end_src
+* Custom modeline
+#+begin_src emacs-lisp
+  (line-number-mode 1)
+  (column-number-mode 1)
+
+  ;; buffer-name
+  (defface my-modline-background
+    '((t
+       ;;:background "blue"
+       :foreground "#E5C07B" :inherit bold))
+    "face for the buffer name")
+
+  (defun my-modeline-buffer-name-space ()
+    (format " %s " (buffer-name)))
+
+  (defvar-local my-modeline-buffer-name
+      '(:eval
+        (propertize (my-modeline-buffer-name-space) 'face 'my-modline-background)
+        ;;(propertize (buffer-name) 'face 'my-modline-background)
+        ))
+  (put 'my-modeline-buffer-name 'risky-local-variable t)
+
+  ;; major-mode
+  (defun my-modeline-major-mode-name ()
+    "Returns capatalized major mode as a string"
+    (capitalize (symbol-name major-mode)))
+
+  (defvar-local my-modeline-major-mode
+      '(:eval
+        (when (mode-line-window-selected-p)
+          ;;(propertize (capitalize (symbol-name major-mode)) 'face '(:weight bold :foreground "blue"))
+          (list
+           (propertize "𝜆" 'face 'shadow)
+           " "
+           (propertize
+            (my-modeline-major-mode-name)
+            'face '(:weight bold :foreground "white"))))))
+
+  (put 'my-modeline-major-mode 'risky-local-variable t)
+
+
+  ;; ;; buffer modified
+  ;; (defvar-local my-modeline-modified
+  ;;     '(:eval
+  ;;       (when (buffer-modified-p)
+  ;;     	(propertize " * " 'face '(:foreground "red" :weight bold)))))
+  ;; (put 'my-modeline-modified 'risky-local-variable t)
+
+
+  ;; ;; TRAMP
+  ;; (defvar-local my-modeline-remote
+  ;;     '(:eval
+  ;;       (when (mode-line-window-selected-p)
+  ;;     	(when (file-remote-p default-directory)
+  ;;     	  (propertize " # " 'face '(:foreground "orange"))))))
+  ;; (put 'my-modeline-remote 'risky-local-variable t)
+
+
+  ;; ;; emacsclient
+  ;; (defvar-local my-modeline-client
+  ;;     '(:eval
+  ;;       (when (mode-line-window-selected-p)
+  ;;     	(when (daemonp)
+  ;;     	  (propertize " @ " 'face '(:foreground "green"))))))
+  ;; (put 'my-modeline-client 'risky-local-variable t)
+
+
+
+  ;; evil
+  (defun my-modeline-evil-state ()
+    (when (bound-and-true-p evil-local-mode)
+      (let* ((state evil-state)
+             (label (pcase state
+                      ('normal "N")
+                      ('insert "I")
+                      ('visual "V")
+                      ('replace "R")
+                      ('operator "O")
+                      ('motion "M")
+                      ('emacs "E")))
+             (face (pcase state
+                     ('normal '(:background "blue" :foreground "black" :weight bold))
+                     ('insert '(:background "gray" :foreground "white" :weight bold))
+                     ('visual '(:background "orange" :foreground "black" :weight bold))
+                     ('replace '(:background "red" :foreground "white" :weight bold))
+                     (_ '(:background "#c6a0f6" :foreground "white")))))
+        (propertize (format " %s " label) 'face face))))
+
+
+  (defvar-local my-modeline-evil
+      '(:eval
+        (when (mode-line-window-selected-p)
+          (my-modeline-evil-state))))
+  (put 'my-modeline-evil 'risky-local-variable t)
+
+  ;;position
+  ;; (defvar-local my-modeline-position
+  ;;     '(:eval
+  ;;       (when (mode-line-window-selected-p)
+  ;;     	(propertize
+  ;;     	 (format-mode-line "%l:%c(%p)")
+  ;;     	 'face 'shadow))))
+
+  ;; (defvar-local my-modeline-position
+  ;;     '(:eval
+  ;;       (when (mode-line-window-selected-p)
+  ;;         (propertize
+  ;;          (concat
+  ;;           (format-mode-line "%l:%c")
+  ;;           "("
+  ;;           (format-mode-line "%p")
+  ;;           ")")
+  ;;          'face 'shadow))))
+
+  (defvar-local my-modeline-position
+      '(:eval
+        (when (mode-line-window-selected-p)
+          (let* ((pos (format-mode-line "%p"))
+                 (pos-escaped
+                  (replace-regexp-in-string
+                   "%" "%%" pos)))
+            (propertize
+             (concat
+              (format-mode-line "%l:%c")
+              "("
+              pos-escaped
+              ")")
+             'face 'shadow)))))
+  (put 'my-modeline-position 'risky-local-variable t)
+
+
+  ;; mode-line
+  (setq-default mode-line-format
+                '("%e"
+            	my-modeline-evil
+      		" "
+            	;; my-modeline-modified
+            	;; my-modeline-remote
+            	;; my-modeline-client
+      		;; mode-line-mule-info
+      		;; mode-line-modified    ;; replaces my-modeline-modified
+      		;; mode-line-remote      ;; replaces my-modeline-remote
+      		;; mode-line-client      ;; replaces my-modeline-client
+
+  		(:eval
+  		 (propertize
+  		  (format-mode-line mode-line-mule-info)
+  		  'face 'shadow))
+
+  		(:eval
+  		 (propertize
+  		  (format-mode-line mode-line-modified)
+  		  'face 'shadow))
+
+  		(:eval
+  		 (propertize
+  		  (format-mode-line  mode-line-remote)
+  		  'face 'shadow))
+
+  		(:eval
+  		 (propertize
+  		  (format-mode-line mode-line-client)
+  		  'face 'shadow))
+
+            	my-modeline-buffer-name
+
+            	;;(:eval (propertize " " 'display '(space :align-to right)))
+            	;; push everything after this to the right
+        		;; (:eval (propertize " " 'display
+        		;; 		   `(space :align-to
+        		;; 			   (- right-fringe
+                  ;;                                 ,(+ 2 (length (format-mode-line my-modeline-major-mode)))))))
+
+      		(:eval
+      		 (let* ((right-str
+      			 (format-mode-line
+      			  (list my-modeline-position
+      				" "
+      				my-modeline-major-mode)))
+      			(right-width
+      			 (string-width right-str)))
+      		   (propertize " "
+      			       'display
+      			       `(space :align-to
+      				       (- right-fringe
+      					  ,right-width)))))
+
+        		my-modeline-position
+        		" "
+            	my-modeline-major-mode))
+
+
+  ;; (setq mode-line-format nil)
+  ;; (kill-local-variable 'mode-line-format)
+
+  ;; Push the new format to ALL existing buffers
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (kill-local-variable 'mode-line-format)))
+  ;; What it does: Kills the buffer-local value in every buffer, forcing
+  ;;them to fall back to the new setq-default value.
+#+end_src
+
+
+* How to use straight.el
+** Full PKG Update and Upgrade
+- check for new packages
+  ~M-x straight-check-all~
+- Pull latest changes for everything ~M-x straight-pull-all~
+- Rebuild everything (important after major updates) ~M-x straight-rebuild-all~
+- ~M-x straight-remove-unused-repos~
+- Restart emacs
+- ~M-x straight-freeze-versions~
+
+*Note*
+Must restart the emacs to take effect the upgrade
+
+Important rule
+Freeze only after testing.
+Bad:
+update -> freeze -> broken
+
+Now you froze broken versions.
+Good:
+update -> test -> freeze
+
+Always.
+** How to remove a pkg
+Just commenting/deleting the config of a pkg and doing ~straight-remove-unused-repos~
+does not remove the pkg.
+
+The current Emacs session still has the package loaded and registered.
+straight.el's internal package list hasn't been fully rebuilt yet.
+You restart Emacs.
+On startup, straight.el reads your updated configuration, sees that the
+package is no longer used, and updates its dependency graph.
+Now M-x straight-remove-unused-repos can correctly identify the repository
+as unused and offer to delete it.
+
+So the workflow is typically:
+Remove/comment out the package declaration.
+Restart Emacs (or otherwise reload your configuration completely).
+Run M-x straight-remove-unused-repos.
+Confirm deletion.
+
+Alternatively, you can often use:
+~M-x straight-prune-build~
+~M-x straight-remove-unused-repos~
+
+after a full reload of your configuration, but a restart is the most
+reliable because it guarantees there are no stale package registrations
+from the previous session.
+
+So what you observed is expected—it isn't that straight-remove-unused-repos
+is broken; it just works based on the packages known to the current Emacs
+session, and restarting updates that state.
+
+** Commands
+|----------------------------------------+-----------------------------------------------------------------------------|
+| =to install and update a pkg=          |                                                                             |
+| straight-use-package                   | to install and also see if a pkg is avaliable or not                        |
+| straight-get-recipe                    | this only ask -> How should I install this package? (like blueprint)         |
+| straight-use-package                   | to install a pkg                                                            |
+|                                        |                                                                             |
+| =updating and upgrading the pkg=       |                                                                             |
+| straight-pull-package                  | pull a single pkg and upgarde it to latest version                          |
+| straight-pull-package-and-deps         | pull a single pkg with all dependencies and upgarde it to latest version    |
+| straight-pull-all                      | complete upgrade                                                            |
+| straight-check-package                 | to tell straight to see the upgrade pkg                                     |
+| straight-check-all                     |                                                                             |
+|                                        |                                                                             |
+| =removing and deleting a pkg=          |                                                                             |
+| straight-remove-unused-repos           | just remove the pkg line from init (now the pkg will be there but not load) |
+|                                        | delete the pkg that are not in init                                         |
+|                                        |                                                                             |
+| =lock a pkg to a version=              |                                                                             |
+| straight-freeze-versions               | to fix to a version (remember to run it again after upgrading pkg)          |
+| straight-thaw-versions                 | to                                                                          |
+| straight-rebuild-all                   |                                                                             |
+|                                        |                                                                             |
+| =to find where is pkg is loadded from= |                                                                             |
+| M-x find-library                       |                                                                             |
+|                                        |                                                                             |
+| =Check package versions and fix them=  |                                                                             |
+| straight-visit-package                 | Check package versions (git log --oneline)                                  |
+| straight-normalize-all                 | [fn:2]                                                                      |
+| straight-rebuild-all                   | [fn:1]                                                                      |
+
+** *Note*
+[fn:1]
+Use this after:
+Emacs upgrade
+dependency breakage
+weird byte-compile errors
+ABI changes
+
+[fn:2]
+It:
+re-applies recipes
+fixes recipe drift
+repairs local package metadata
+
+Run when:
+changing recipes
+moving packages
+weird install state
+
+** Mental Modal
+pull = get latest
+freeze = save current state
+thaw = restore saved state
+rebuild = compile/install current state
+
+** A real world example
+*** New machine setup (full real-world)
+**** This is basically:
+"I want my entire Emacs setup to be reproducible."
+That means:
+same packages
+same versions
+same config
+same behavior
+
+on any machine.
+Think
+Laptop A -> exact copy -> Laptop B
+
+**** Step 1: Freeze package versions
+***** On your main machine:
+~M-x straight-freeze-versions~
+
+Creates:
+~/.emacs.d/straight/versions/default.el
+
+Example:
+
+#+begin_src emacs-lisp
+  (("use-package" . "4f2ab83")
+   ("magit" . "6b0f9cd")
+   ("transient" . "2eaa981")
+   ("vertico" . "a2d5f8c"))
+#+end_src
+
+This file is your package lockfile.
+Very important.
+
+***** More options
+freeze a pkg version or Pin exact commit
+#+begin_src emacs-lisp
+  (use-package org-modern
+    :straight (:host github
+  		   :repo "minad/org-modern"
+  		   :pin "7c8a9f3"))
+#+end_src
+
+install from specific repo
+#+begin_src emacs-lisp
+  (use-package avy
+    :straight (:host github :repo "abo-abo/avy"))
+#+end_src
+
+Fork package
+#+begin_src emacs-lisp
+  (use-package embark
+    :straight (:host github
+  		   :repo "yourname/embark"))
+#+end_src
+
+Local package development
+#+begin_src emacs-lisp
+  (use-package my-package
+    :straight (:local-repo "~/projects/my-package")) 
+#+end_src
+
+**** Step 2: Put your Emacs config into Git
+
+Go into your `.emacs.d`:
+cd ~/.emacs.d
+
+Initialize git:
+~git init~
+
+Output:
+Initialized empty Git repository in /home/wolfer/.emacs.d/.git/
+
+**** Step 3: Create `.gitignore`
+
+Make:
+~touch .gitignore~
+
+Put this inside:
+straight/build/
+eln-cache/
+auto-save-list/
+backups/
+recentf
+var/
+*.elc
+
+Why?
+Because:
+You want:
+config files
+lockfile
+custom code
+
+Not:
+compiled junk
+cache
+temporary files
+
+**** Step 4: Add files
+
+Check status:
+git status
+
+Output:
+Untracked files:
+  init.el
+  early-init.el
+  straight/versions/default.el
+
+Add:
+git add .
+
+Commit:
+git commit -m "Initial Emacs config"
+
+Output:
+[master (root-commit) a8f12d3] Initial Emacs config
+ 8 files changed, 540 insertions(+)
+
+Now your config is version-controlled.
+
+**** Step 5: Create GitHub repo
+
+Go to [GitHub](https://github.com?utm_source=chatgpt.com)
+
+Create:
+my-emacs-config
+Do NOT initialize with README.
+
+GitHub gives:
+
+#+begin_src bash
+git remote add origin git@github.com:yourname/my-emacs-config.git
+git branch -M main
+git push -u origin main
+#+end_src
+
+Run exactly.
+Output:
+Enumerating objects: 25
+Counting objects: 100%
+Writing objects: 100%
+To github.com:yourname/my-emacs-config.git
+
+Done.
+
+**** New machine setup
+
+New PC:
+Install Emacs.
+Install Git.
+Then:
+~git clone git@github.com:yourname/my-emacs-config.git ~/.emacs.d~
+
+Output:
+Cloning into '~/.emacs.d'...
+
+Start Emacs.
+Straight bootstraps itself.
+Then:
+M-x straight-thaw-versions
+
+What happens:
+magit -> installs exact frozen commit
+transient -> installs exact frozen commit
+vertico -> installs exact frozen commit
+
+Not latest.
+Exact.
+This is huge.
+
+**** Updating later
+
+On old machine:
+
+#+begin_src emacs-lisp
+M-x straight-pull-all
+M-x straight-rebuild-all
+M-x straight-freeze-versions
+#+end_src
+
+Then:
+git add .
+git commit -m "Update packages"
+git push
+
+On new machine:
+git pull
+
+Then:
+~M-x straight-thaw-versions~
+
+Sync complete.
+
+**** How to debug packages
+
+Find source:
+~M-x find-function~
+
+Example:
+Find:
+consult-line
+
+Jumps into:
+straight/repos/consult/consult.el
+
+Read source.
+Edit.
+Reload:
+~M-x eval-buffer~
+
+This is how Emacs pros learn.
+
+*** About `git checkout abc1234`
+
+Very important.
+You said:
+checkout is for branch jump
+
+Partially true.
+But `checkout` can do multiple things.
+
+## 1. Branch switching
+
+Example:
+
+```bash
+git checkout main
+```
+
+Means:
+
+> move to branch `main`
+
+---
+
+## 2. Commit switching (detached HEAD)
+
+Example:
+
+```bash
+git checkout abc1234
+```
+
+Means:
+
+> move to this exact historical commit
+
+Not a branch.
+
+Not latest.
+
+Just that snapshot.
+
+---
+
+Example:
+
+Current history:
+
+```text
+f91a222 fix bug
+c73b111 add feature
+abc1234 stable
+8dd91f0 initial
+```
+
+Current:
+
+```text
+HEAD -> f91a222
+```
+
+You do:
+
+```bash
+git checkout abc1234
+```
+
+Now:
+
+```text
+HEAD detached at abc1234
+```
+
+Meaning:
+
+You time-traveled.
+
+Package state becomes:
+
+```text
+magit at stable version
+```
+
+This is perfect for rollback.
+
+---
+
+# Why detached HEAD?
+
+Because you’re not "on" a branch anymore.
+
+You’re standing directly on a commit.
+
+Like:
+
+Normal:
+
+```text
+main -> commit1 -> commit2 -> commit3
+```
+
+Detached:
+
+```text
+commit2
+ ^
+ HEAD
+```
+
+No branch.
+
+Just snapshot.
+
+---
+
+# In straight partial rollback
+
+If Magit breaks:
+
+Go:
+
+```elisp
+M-x straight-visit-package RET magit
+```
+
+Then:
+
+```bash
+git log --oneline
+```
+
+Output:
+
+```text
+d91ff22 latest (broken)
+8bcf231 changed transient API (broken)
+abc1234 stable
+93ad882 old stable
+```
+
+Choose:
+
+```bash
+git checkout abc1234
+```
+
+Output:
+
+```text
+HEAD is now at abc1234
+```
+
+Now Magit is restored.
+
+Freeze:
+
+```elisp
+M-x straight-freeze-versions
+```
+
+This updates:
+
+```elisp
+("magit" . "abc1234")
+```
+
+Now permanent.
+
+---
+
+# To return to latest
+
+Later:
+
+```bash
+git checkout main
+git pull
+```
+
+Back to newest.
+
+---
+
+Mental model:
+
+```text
+git checkout branch   = move to moving timeline
+git checkout commit   = move to frozen point in time
+```
+
+That distinction is everything. Once you get this, package rollback becomes easy.
+
+** kgk
+===================================================
+1. What is a recipe
+   explain me this
+   ~(evil :type git :files (:defaults "doc/build/texinfo/evil.texi" (:exclude "evil-test-helpers.el") "evil-pkg.el") :host github :repo "emacs-evil/evil")~
+   ~(clipetty :type git :host github :repo "spudlyo/clipetty")~
+2. 
+   
+** Ways of installing pkg in emacs
+Yes — those are the main ones. But there are more. Let’s map the whole landscape clearly.
+
+# 1. Using straight.el (best for serious configs)
+
+Example:
+
+```elisp
+(use-package consult
+  :straight t)
+```
+
+or explicit Git repo:
+
+```elisp
+(use-package consult
+  :straight (:host github :repo "minad/consult"))
+```
+
+What happens:
+
+```text
+Git clone -> build -> autoload -> byte compile
+```
+
+Pros:
+
+reproducible
+lockfiles
+easy rollback
+pure git workflow
+
+Best for:
+
+long-term configs
+advanced users
+
+---
+
+# 2. Manual install (old-school)
+
+Download:
+
+```text
+foo.el
+```
+
+Put it somewhere:
+
+```text
+~/.emacs.d/lisp/foo.el
+```
+
+Then:
+
+```elisp
+(add-to-list 'load-path "~/.emacs.d/lisp/")
+(require 'foo)
+```
+
+or:
+
+```elisp
+(load "~/path/foo.el")
+```
+
+Pros:
+
+total control
+simplest possible
+
+Cons:
+
+no updates
+no dependency management
+manual pain
+
+Best for:
+
+tiny personal scripts
+experimental code
+
+---
+
+# 3. `package-vc-install` (built into Emacs 29+)
+
+Example:
+
+```elisp
+M-x package-vc-install
+```
+
+Then:
+
+```text
+https://github.com/minad/consult
+```
+
+or:
+
+```elisp
+(package-vc-install "https://github.com/minad/consult")
+```
+
+This uses package.el’s VC backend.
+
+Important:
+
+It is **not the same as straight.el**.
+
+Difference:
+
+`package-vc-install`:
+
+```text
+package.el -> git clone -> install
+```
+
+Straight:
+
+```text
+straight.el -> git clone -> recipe system -> build system -> lockfile system
+```
+
+So:
+
+> `package-vc-install` belongs to package.el world.
+
+Not straight.
+
+Straight ignores it unless you manually mix them.
+
+---
+
+# 4. ELPA/MELPA via package.el
+
+Classic:
+
+```elisp
+(package-install 'consult)
+```
+
+Downloads from:
+
+GNU ELPA
+MELPA
+NonGNU ELPA
+
+Pros:
+
+easy
+stable
+
+Cons:
+
+less reproducible than straight
+tarball based, not full git
+
+---
+
+# 5. Git submodules
+
+Advanced.
+
+Inside `.emacs.d`:
+
+```bash
+git submodule add https://github.com/minad/consult.git site-lisp/consult
+```
+
+Then:
+
+```elisp
+(add-to-list 'load-path "~/.emacs.d/site-lisp/consult")
+(require 'consult)
+```
+
+Pros:
+
+versioned in your config repo
+precise control
+
+Cons:
+
+manual dependency handling
+
+Very powerful.
+
+---
+
+# 6. Git subtree
+
+Like submodules but embedded.
+
+Example:
+
+```bash
+git subtree add --prefix=site-lisp/consult https://github.com/minad/consult.git main
+```
+
+Unlike submodules:
+
+```text
+everything is inside your main repo
+```
+
+Good for portable configs.
+
+---
+
+# 7. Quelpa
+
+Quelpa
+
+Example:
+
+```elisp
+(quelpa '(consult :fetcher github :repo "minad/consult"))
+```
+
+It builds packages from source.
+
+Think:
+
+```text
+package.el + build from git
+```
+
+Older alternative to straight.
+
+Less popular now.
+
+---
+
+# 8. Borg (very niche)
+
+Borg
+
+Uses git submodules heavily.
+
+Very deterministic.
+
+Very manual.
+
+---
+
+# 9. Doom’s `package!`
+
+If using Doom Emacs:
+
+```elisp
+(package! consult)
+```
+
+Underneath:
+
+```text
+uses straight.el
+```
+
+Just abstraction.
+
+---
+
+# Your question: which is best?
+
+For you (learning deeply):
+
+Use:
+
+```text
+straight.el = main
+manual = for your own code
+package-vc-install = for quick testing
+```
+
+Good system:
+
+```text
+Main packages -> straight
+Random test package -> package-vc-install
+Local scripts -> add-to-list/load-path
+```
+
+Avoid mixing:
+
+Bad:
+
+```text
+straight + package.el + package-vc-install + manual all for same package
+```
+
+That creates:
+
+```text
+duplicate loads
+version conflicts
+autoload chaos
+```
+
+Exactly like your Transient issue.
+
+Rule:
+
+```text
+one package = one installation method
+```
+
+That rule saves pain.
+* How straight.el actually works vs package.el
+Yes — you’re understanding it correctly. Let’s sharpen it.
+
+---
+
+# 1. About `straight-freeze-versions`
+
+You said:
+
+> if i lock my pkg by `M-x straight-freeze-versions` then i will have just these exact things to revert to.
+
+Correct.
+
+Think:
+
+Before freeze:
+
+```text
+magit -> commit A
+consult -> commit B
+vertico -> commit C
+```
+
+Run:
+
+```elisp
+M-x straight-freeze-versions
+```
+
+It saves:
+
+```text
+magit = A
+consult = B
+vertico = C
+```
+
+inside:
+
+```text
+~/.emacs.d/straight/versions/default.el
+```
+
+That file is your checkpoint.
+
+---
+
+Then later:
+
+You update:
+
+```elisp
+M-x straight-pull-all
+```
+
+Now:
+
+```text
+magit -> commit D
+consult -> commit E
+vertico -> commit F
+```
+
+If broken:
+
+```elisp
+M-x straight-thaw-versions
+```
+
+returns to:
+
+```text
+A B C
+```
+
+Exactly.
+
+Like:
+
+```text
+freeze = save state
+thaw = restore state
+```
+
+---
+
+You also said:
+
+> regardless if i did freeze or not, `straight-pull-all` will update all pkg
+
+Yes.
+
+This is important:
+
+`straight-pull-all` ignores freeze.
+
+It just pulls latest from remote.
+
+Freeze does NOT block updates.
+
+It only records rollback points.
+
+Think:
+
+```text
+pull = move forward
+freeze = save current location
+thaw = go back to saved location
+```
+
+---
+
+# 2. How straight.el works
+
+This is the important mental model.
+
+Normal package manager thinking:
+
+```text
+download package -> install package
+```
+
+Straight thinking:
+
+```text
+clone git repo -> build package -> load package
+```
+
+Very different.
+
+---
+
+## First install
+
+Example:
+
+```elisp
+(use-package magit
+  :straight t)
+```
+
+Straight sees:
+
+```text
+magit not installed
+```
+
+So it does:
+
+Step 1:
+
+```bash
+git clone https://github.com/magit/magit
+```
+
+Stores in:
+
+```text
+~/.emacs.d/straight/repos/magit/
+```
+
+This is source code.
+
+Raw repo.
+
+---
+
+Step 2: build
+
+Copies/builds into:
+
+```text
+~/.emacs.d/straight/build/magit/
+```
+
+This is compiled/usable version.
+
+Contains:
+
+```text
+magit.elc
+autoloads
+compiled stuff
+```
+
+---
+
+Step 3: load-path
+
+Adds:
+
+```elisp
+~/.emacs.d/straight/build/magit/
+```
+
+to:
+
+```elisp
+load-path
+```
+
+Then:
+
+```elisp
+(require 'magit)
+```
+
+loads it.
+
+Done.
+
+---
+
+# On restart
+
+You asked:
+
+> it will not reinstall and make them if i restart Emacs until i do `straight-pull-all`
+
+Correct.
+
+This is very important.
+
+On restart:
+
+Straight does NOT:
+
+```text
+clone again
+rebuild again
+reinstall again
+```
+
+It simply:
+
+```text
+loads existing build
+```
+
+Fast.
+
+Like:
+
+```text
+repos/ = source storage
+build/ = usable package
+```
+
+---
+
+So:
+
+First time:
+
+```text
+clone + build
+```
+
+After that:
+
+```text
+load only
+```
+
+Unless:
+
+package updated
+rebuild requested
+package deleted
+
+---
+
+# When does straight rebuild?
+
+Rebuild happens when:
+
+## Manual:
+
+```elisp
+M-x straight-rebuild-package
+```
+
+or:
+
+```elisp
+M-x straight-rebuild-all
+```
+
+---
+
+## After pull (sometimes)
+
+If source changed:
+
+```elisp
+M-x straight-pull-all
+```
+
+may trigger rebuild.
+
+Because build is outdated.
+
+---
+
+## If build directory missing
+
+If:
+
+```text
+~/.emacs.d/straight/build/magit/
+```
+
+deleted
+
+Straight rebuilds.
+
+---
+
+# How package.el works
+
+package.el is older.
+
+Mental model:
+
+```text
+download tarball -> extract -> load
+```
+
+Not full git clone.
+
+Example:
+
+```elisp
+(package-install 'magit)
+```
+
+It downloads from:
+
+```text
+MELPA / ELPA
+```
+
+Stores in:
+
+```text
+~/.emacs.d/elpa/magit-4.3.1/
+```
+
+Versioned directory.
+
+Not git.
+
+Usually.
+
+---
+
+To update:
+
+```elisp
+M-x package-refresh-contents
+M-x package-upgrade
+```
+
+or:
+
+```elisp
+M-x list-packages
+U x
+```
+
+---
+
+# Straight vs Package.el
+
+## Source model
+
+Package.el:
+
+```text
+package archives
+```
+
+Straight:
+
+```text
+git repositories
+```
+
+---
+
+## Version control
+
+Package.el:
+
+```text
+version numbers
+```
+
+Example:
+
+```text
+4.3.1
+```
+
+Straight:
+
+```text
+git commits
+```
+
+Example:
+
+```text
+abc1234
+```
+
+More precise.
+
+---
+
+## Rollback
+
+Package.el:
+
+Hard.
+
+Manual.
+
+Straight:
+
+Easy:
+
+```elisp
+straight-thaw-versions
+```
+
+Huge advantage.
+
+---
+
+## Reproducibility
+
+Package.el:
+
+Weak.
+
+Straight:
+
+Strong.
+
+Because exact commits.
+
+---
+
+## Local hacking
+
+Package.el:
+
+awkward.
+
+Straight:
+
+excellent.
+
+Because full git repo.
+
+Can do:
+
+```bash
+git checkout
+git pull
+git diff
+git bisect
+```
+
+inside packages.
+
+Very powerful.
+
+---
+
+# Directory comparison
+
+Package.el:
+
+```text
+~/.emacs.d/elpa/
+    magit-4.3.1/
+```
+
+Straight:
+
+```text
+~/.emacs.d/straight/
+    repos/
+        magit/
+    build/
+        magit/
+    versions/
+        default.el
+```
+
+Much cleaner separation.
+
+---
+
+# Best mental model
+
+Package.el:
+
+```text
+like apt install
+```
+
+Straight:
+
+```text
+like git clone + make + use
+```
+
+That’s the simplest accurate comparison.
+
+And your understanding now is solid:
+
+✔ freeze saves checkpoints
+✔ thaw restores checkpoints
+✔ pull updates repos
+✔ restart only loads built packages
+✔ straight doesn’t reinstall every startup
+✔ repos and builds are separate
+
+That means you’ve got the core model right. That’s the hard part.
+
+in package.el  find package → download → install → loadable
+we can see pkg by list-packages
+
+in straight.el find recipe → clone repo → build → loadable
+we can see pkg by
+~/.emacs.d/straight/repos/
+grep "use-package" ~/.config/emacs-straight/init.el | less
+grep "use-package" ~/.config/emacs-straight/init.el | wc -l
+
+Package.el thinks:
+
+I manage all packages centrally
+
+Straight thinks:
+
+your config is the package list
+
+Big philosophical difference.
+
+Quick mapping:
+| package.el               | straight.el                   |
+| ------------------------ | ----------------------------- |
+| package-install          | straight-use-package          |
+| package-delete           | delete repo/remove config     |
+| list-packages            | your config / repos directory |
+| package-refresh-contents | straight-pull-all             |
+| package-upgrade          | straight-pull-package         |
+| package-autoremove       | straight-remove-unused-repos  |
+| package-reinstall        | straight-rebuild-package      |
+
+* How to learn emacs with straight.el (your roadmap)
+** Phase 1:
+Learn:
+use-package
+:hook
+:bind
+:config
+:custom
+
+** Phase 2:
+Learn:
+straight-freeze-versions
+straight-thaw-versions
+straight-pull-all
+
+** Phase 3:
+Hack packages:
+Go into:
+straight/repos/
+Read code.
+
+Modify small things.
+
+** Phase 4:
+Write your own package.
+Load locally.
+
+* guide to package.el
+Good. You should know **package.el** deeply even if you use `straight.el`, because many packages and configs still assume package.el semantics.
+
+Think of it as learning `pacman` before using Gentoo overlays.
+
+---
+
+# 1. What package.el is
+
+Built-in Emacs package manager.
+
+Introduced in Emacs 24.
+
+It handles:
+
+package repositories
+package download
+install
+upgrade
+remove
+dependency resolution
+
+Default flow:
+
+```text id="sl03wv"
+ELPA/MELPA/GNU ELPA → download tarball → install into elpa/
+```
+
+Installed packages live in:
+
+```text id="t2g6dg"
+~/.emacs.d/elpa/
+```
+
+or:
+
+```text id="2pw1b7"
+~/.config/emacs/elpa/
+```
+
+depending on `user-emacs-directory`.
+
+---
+
+# 2. Basic setup
+
+Usually:
+
+```elisp id="2k9n4h"
+(require 'package)
+
+(add-to-list 'package-archives
+             '("melpa" . "https://melpa.org/packages/")
+             t)
+
+(package-initialize)
+```
+
+Main repos:
+
+GNU ELPA → stable
+MELPA → latest
+MELPA Stable → stable snapshots
+
+---
+
+# 3. Refresh package database
+
+Like:
+
+```text id="zfh3s8"
+pacman -Sy
+```
+
+Run:
+
+```text id="d7c7hb"
+M-x package-refresh-contents
+```
+
+What it does:
+
+downloads package metadata.
+
+Output:
+
+```text id="5mjlwm"
+Contacting host: melpa.org
+Package refresh done
+```
+
+Needed before installing new packages.
+
+---
+
+# 4. Install package
+
+## Method A: interactive
+
+```text id="8aw4bp"
+M-x package-install
+```
+
+Example:
+
+```text id="5j95xv"
+consult
+```
+
+Output:
+
+```text id="zw4t06"
+Installing consult...
+Done
+```
+
+---
+
+## Method B: Lisp
+
+```elisp id="u9qq8m"
+(package-install 'consult)
+```
+
+Useful for scripting.
+
+---
+
+# 5. List packages
+
+```text id="m4i4bo"
+M-x package-list-packages
+```
+
+This opens package menu.
+
+Symbols:
+
+```text id="mdz6gs"
+i = installed
+U = upgrade available
+d = mark delete
+u = unmark
+x = execute
+```
+
+Very important.
+
+---
+
+# 6. Upgrade packages
+
+Mark all upgrades:
+
+```text id="4i7g4p"
+M-x package-list-packages
+U
+x
+```
+
+Equivalent:
+
+```text id="iib7wu"
+upgrade all
+```
+
+Output:
+
+```text id="x8s4w4"
+3 packages upgraded
+```
+
+---
+
+Upgrade one package:
+
+Delete old then reinstall.
+
+Because package.el doesn’t have great per-package upgrade flow.
+
+---
+
+# 7. Delete package
+
+Direct:
+
+```text id="3r1q0g"
+M-x package-delete
+```
+
+Pick package.
+
+Done.
+
+---
+
+From package menu:
+
+```text id="ittrhn"
+d
+x
+```
+
+on selected package.
+
+---
+
+Lisp:
+
+```elisp id="xwdj5x"
+(package-delete (cadr (assq 'consult package-alist)))
+```
+
+Rarely needed.
+
+---
+
+# 8. Reinstall package
+
+Useful if corrupted.
+
+Delete:
+
+```text id="9tldtx"
+M-x package-delete
+```
+
+Install again:
+
+```text id="q2rtbl"
+M-x package-install
+```
+
+---
+
+# 9. Check installed packages
+
+Variable:
+
+```elisp id="u4qppk"
+package-alist
+```
+
+Example output:
+
+```elisp id="zw81am"
+((consult ...)
+ (vertico ...)
+ (embark ...))
+```
+
+Useful for debugging.
+
+---
+
+# 10. Check available packages
+
+Variable:
+
+```elisp id="qg8s5f"
+package-archive-contents
+```
+
+Shows all repo packages.
+
+Huge list.
+
+---
+
+# 11. Check if package installed
+
+```elisp id="ehljlwm"
+(package-installed-p 'consult)
+```
+
+Output:
+
+```elisp id="kk28qb"
+t
+```
+
+or:
+
+```elisp id="tiz88w"
+nil
+```
+
+Good for conditional config.
+
+---
+
+Example:
+
+```elisp id="krh8i8"
+(unless (package-installed-p 'consult)
+  (package-install 'consult))
+```
+
+Auto-installs.
+
+Classic setup.
+
+---
+
+# 12. Auto-install missing packages
+
+Example:
+
+```elisp id="cm9i6g"
+(dolist (pkg '(consult vertico corfu))
+  (unless (package-installed-p pkg)
+    (package-install pkg)))
+```
+
+On startup:
+
+installs missing.
+
+---
+
+# 13. Load package manually
+
+Install ≠ load.
+
+Load:
+
+```elisp id="9fdxg8"
+(require 'consult)
+```
+
+or use:
+
+use-package
+
+```elisp id="mwxg5s"
+(use-package consult)
+```
+
+Better.
+
+---
+
+# 14. Package dependencies
+
+Install:
+
+```text id="mv61vk"
+magit
+```
+
+It may install:
+
+```text id="g9g4zh"
+dash
+transient
+with-editor
+git-commit
+```
+
+Automatically.
+
+Package.el handles this.
+
+---
+
+# 15. Clean orphaned packages
+
+Big one.
+
+Remove unused dependencies:
+
+```text id="kl3my7"
+M-x package-autoremove
+```
+
+Like:
+
+```text id="fcaf4x"
+apt autoremove
+```
+
+Very useful.
+
+---
+
+# 16. Package locations
+
+Find package:
+
+```elisp id="mr30o5"
+(package-desc-dir
+ (cadr (assq 'consult package-alist)))
+```
+
+Output:
+
+```text id="c2w05q"
+~/.emacs.d/elpa/consult-20240630/
+```
+
+Useful for source reading.
+
+---
+
+# 17. Describe package
+
+```text id="6f7vcz"
+M-x describe-package
+```
+
+Example:
+
+```text id="pl2j3c"
+embark
+```
+
+Shows:
+
+docs
+version
+dependencies
+homepage
+
+Use this a lot.
+
+---
+
+# 18. Important files
+
+Installed package metadata:
+
+```text id="s7d42w"
+~/.emacs.d/elpa/archives/
+```
+
+Package cache:
+
+```text id="jlwm5r"
+archive-contents
+```
+
+Installed records:
+
+```text id="0q83r8"
+package-alist
+```
+
+---
+
+# 19. Common problems
+
+---
+
+## “Package not found”
+
+Fix:
+
+```text id="udl9o9"
+M-x package-refresh-contents
+```
+
+---
+
+## Broken package
+
+Fix:
+
+delete + reinstall.
+
+---
+
+## Init loads before install
+
+Use:
+
+```elisp id="y5a8v0"
+(package-initialize)
+```
+
+early.
+
+---
+
+# 20. Pro workflow
+
+My recommendation:
+
+Daily:
+
+```text id="oy1ivx"
+M-x package-list-packages
+U
+x
+```
+
+Weekly:
+
+```text id="1z2h5e"
+M-x package-autoremove
+```
+
+When adding:
+
+```text id="12t6kl"
+M-x package-refresh-contents
+M-x package-install
+```
+
+When debugging:
+
+```text id="42ms9e"
+M-x describe-package
+M-x find-library
+```
+
+---
+
+# package.el vs straight.el
+
+| Feature       | package.el | straight.el |
+| ------------- | ---------- | ----------- |
+| Simple        | yes        | medium      |
+| Git source    | no         | yes         |
+| Pin commits   | weak       | strong      |
+| Reproducible  | weak       | excellent   |
+| Hack packages | bad        | excellent   |
+| Fast setup    | excellent  | good        |
+
+My advice for you:
+
+Learn package.el fully for foundation.
+
+Use `straight.el` for serious config.
+
+That’s the strongest combo.
+
+** diff btw package-list-packages & package-upgrade-all
+Good question. This confuses many people.
+
+In **package.el**, there are two common ways:
+
+---
+
+# Method 1: `package-list-packages`
+
+Run:
+
+```text id="4wbq4o"
+M-x package-list-packages
+```
+
+Then:
+
+```text id="b5r1lj"
+U
+x
+```
+
+What happens:
+
+`U` marks all upgradeable packages
+`x` executes them
+
+Example:
+
+Before:
+
+```text id="djlwmv"
+consult   1.8 -> 2.0
+vertico   1.5 -> 1.6
+embark    1.1 -> 1.2
+```
+
+After `U`:
+
+```text id="8u2mtg"
+U consult
+U vertico
+U embark
+```
+
+After `x`:
+
+```text id="im6mpz"
+3 packages upgraded
+```
+
+This is interactive.
+
+You see what’s changing.
+
+Best for normal humans.
+
+---
+
+# Method 2: `package-upgrade-all`
+
+Run:
+
+```text id="4j57fx"
+M-x package-upgrade-all
+```
+
+This does:
+
+```text id="1c98dy"
+Refresh package archive
+Find upgrades
+Install upgrades automatically
+```
+
+No package menu.
+
+No manual marking.
+
+Just:
+
+```text id="8j6p2j"
+do everything
+```
+
+Output:
+
+```text id="vqarfk"
+Upgrading consult...
+Upgrading vertico...
+Done.
+```
+
+---
+
+# Difference
+
+Think:
+
+### `package-list-packages`
+
+Like:
+
+```text id="z7l1j7"
+pacman -Qu
+```
+
+See upgrades first.
+
+Control them.
+
+---
+
+### `package-upgrade-all`
+
+Like:
+
+```text id="ngz8w0"
+pacman -Syu
+```
+
+Just update everything.
+
+---
+
+# Which should you use?
+
+I recommend:
+
+Use:
+
+```text id="0drjyb"
+package-list-packages
+```
+
+when:
+
+you want control
+checking changelogs
+debugging
+
+Use:
+
+```text id="4u2x8w"
+package-upgrade-all
+```
+
+when:
+
+lazy
+quick sync
+maintaining simple config
+
+---
+
+For your style (you like understanding systems), I’d say:
+
+```text id="j0w87g"
+package-list-packages → U → x
+```
+
+is better.
+
+You can inspect before upgrading.
+
+That habit transfers well to Gentoo, Arch, and even `straight.el`.
+
+** diff btw package-list-packages & list-packages
+Practically? **Almost none.**
+
+In modern **GNU Emacs**:
+
+```text id="i8vkrd"
+M-x list-packages
+```
+
+and
+
+```text id="cgm4av"
+M-x package-list-packages
+```
+
+point to the same thing.
+
+`list-packages` is basically the user-facing alias.
+
+Think:
+
+```text id="o4svvl"
+list-packages → package-list-packages
+```
+
+Like:
+
+```text id="4r7uyj"
+ls → exa (not exact, but same idea)
+```
+
+just one is shorter/nicer.
+
+---
+
+You can verify:
+
+Run:
+
+```elisp id="jlwm78"
+(symbol-function 'list-packages)
+```
+
+or:
+
+```elisp id="qq74zu"
+(describe-function 'list-packages)
+```
+
+You’ll see it routes into package.el internals.
+
+---
+
+Why both exist?
+
+Historical/UI reason:
+
+`list-packages` = generic user command (“show me packages”)
+`package-list-packages` = package.el internal naming style
+
+Emacs likes this pattern.
+
+Examples:
+
+```text id="jv68fr"
+list-buffers
+package-list-packages
+ibuffer
+bookmark-bmenu-list
+```
+
+Some are generic names, some are package/module-prefixed.
+
+---
+
+Rule of thumb:
+
+Use:
+
+```text id="udf22p"
+M-x list-packages
+```
+
+for daily use.
+
+Remember:
+
+```text id="zjlwm1"
+package-list-packages
+```
+
+because you’ll see it in docs/code. Same engine. Same output. Same package menu. No power difference.
+
+* How to do in emacs
+** search for all ts-mode
+~C-h a RET -ts-mode RET~
+~find /usr -name "*ts-mode.el*"~
+
+** g
+
+* Debugging emacs
+** Debuging init
++ to launch emacs with a faulty init/see error in init run
+  #+begin_src bash
+    # this command is good if only have one emacs and client
+    emacs --dbug-init
+
+    # this command set the user-emacs-dir good for multiple client/emacs
+    emacs --debug-init --init-directory=/path/to/dir
+
+    # never do this
+    emacs --debug-init --init-directory=~/.config/emacs-straight/
+  #+end_src
+
+  + other usefull command
+    #+begin_src bash
+      # skip all init
+      emacs -q
+
+      # Skip all init + no site-lisp
+      emacs -Q
+
+      # load a specific init
+      emacs -l /path/to/init.el
+    #+end_src
+** The output
+
+#+begin_src emacs-lisp
+Debugger entered--Lisp error: (wrong-type-argument plistp ('ef-maris-dark))
+  plist-put(('ef-maris-dark) :package "load-theme")
+  straight--convert-recipe((load-theme 'ef-maris-dark) nil)
+  straight-use-package((load-theme 'ef-maris-dark))
+  load-with-code-conversion("/home/wolfer/.config/emacs-straight/init.el" "/home/wolfer/.config/emacs-straight/init.el" t t)
+  load("/home/wolfer/.config/emacs-straight/init" noerror nomessage)
+  #f(compiled-function () #<bytecode 0xf0b106280ba9011>)()
+  #f(compiled-function () #<bytecode -0x4307d7bb01d2857>)()
+  handler-bind-1(#f(compiled-function () #<bytecode -0x4307d7bb01d2857>) (error) startup--debug)
+  startup--load-user-init-file(#f(compiled-function () #<bytecode -0x136499c3f2f6000>) #f(compiled-function () #<bytecode -0x352c02b7edd4cad>) t)
+  command-line()
+  normal-top-level()
+#+end_src
+
+** read debugger output
+*** Step 1: Forget about reading from the top
+
+Never start from top
+
+Debugger entered--Lisp error:
+...
+...
+normal-top-level()
+
+and try to read downward.
+
+*Don't.* Instead, think of the backtrace as a *call stack*.
+Every function called the next one.
+So read it *from the bottom upward*.
+
+#+begin_example
+normal-top-level
+      │
+      ▼
+command-line
+      │
+      ▼
+startup--load-user-init-file
+      │
+      ▼
+load init.el
+      │
+      ▼
+straight-use-package
+      │
+      ▼
+ERROR
+#+end_example
+
+
+The bottom shows where Emacs started.
+The top shows where it finally crashed.
+
+*** Step 2: The first line is the most important
+**** The error
+
+For example:
+Debugger entered--Lisp error:
+(wrong-type-argument plistp ('ef-maris-dark))
+
+This tells you
+1. *What kind of error*
+2. *What value caused it*
+
+Here
+wrong-type-argument
+
+means "I expected one type of object, but got another."
+Then ~plistp~ means "I expected a property list."
+
+Instead Emacs received
+~('ef-maris-dark)~
+
+which is just a list.
+So immediately you know
+Some function expected a plist but got a list.
+Already you've learned a lot.
+
+**** First: Everything in Lisp is a list
+
+When you see
+(load-theme 'ef-maris-dark t)
+
+this is literally a list.
+
+(
+ load-theme
+ 'ef-maris-dark
+ t
+)
+
+The first element is treated as a function.
+So this means
+
+Call function load-theme
+Argument 1 -> 'ef-maris-dark
+Argument 2 -> t
+
+Exactly like C:
+load_theme("ef-maris-dark", true);
+
+or Python:
+load_theme("ef-maris-dark", True)
+
+*** Step 3: Find the first function after the error
+**** Next you saw
+~plist-put(('ef-maris-dark) :package "load-theme")~
+
+Think of it as
+
+#+begin_src emacs-lisp
+plist-put(
+    ('ef-maris-dark),
+    :package,
+    "load-theme")
+#+end_src
+
+This tells you plist-put was trying to add ~:package~ to
+~('ef-maris-dark)~
+
+But that isn't a property list. *Crash*.
+
+**** What is a Property List (plist)?
+
+A plist is just a list containing
+KEY VALUE
+KEY VALUE
+KEY VALUE
+
+Example:
+
+(:name "Ani"
+ :age 20
+ :city "Delhi")
+
+Notice the pattern
+:name
+"Ani"
+
+:age
+20
+
+:city
+"Delhi"
+
+Always
+key value
+key value
+key value
+
+Think of it like a Python dictionary.
+Python
+
+{
+    "name": "Ani",
+    "age": 20,
+    "city": "Delhi"
+}
+
+Emacs Lisp
+
+(:name "Ani"
+ :age 20
+ :city "Delhi")
+
+Same information.
+Different syntax.
+
+**** What does plist-put do?
+
+Suppose you have
+(setq person
+      '(:name "Ani"
+        :age 20))
+
+Now you want to add
+
+city = Delhi
+
+You write
+(plist-put person :city "Delhi")
+
+Result
+(:name "Ani"
+ :age 20
+ :city "Delhi")
+
+So plist-put
+
+means
+Put a property into a property list.
+Exactly like
+
+Python
+person["city"] = "Delhi"
+
+*** Step 4: Ask
+"Who called plist-put?"
+The next line answers ~straight--convert-recipe(...)~
+So now your chain is
+
+#+begin_example
+straight--convert-recipe
+        │
+        ▼
+plist-put
+        │
+        ▼
+ERROR
+#+end_example
+
+Already you know Straight is converting something into a recipe.
+
+*** Step 5: Keep climbing
+Then
+~straight-use-package((load-theme 'ef-maris-dark))~
+
+This line was the smoking gun. Read it literally.
+Straight is doing
+
+#+begin_src emacs-lisp
+(straight-use-package
+ '(load-theme 'ef-maris-dark))
+#+end_src
+
+Immediately ask yourself Wait...
+Is `load-theme` a package? No.
+Therefore something is wrong.
+
+This one line practically solved the bug.
+
+*** Step 6: Continue upward
+~load-with-code-conversion(...)~
+means Emacs is loading a file.
+Specifically init.el
+Nothing interesting here.
+Then
+load(...)
+
+Again
+loading init.el
+
+Still fine.
+Then
+startup--load-user-init-file
+
+means
+Emacs startup
+        │
+        ▼
+Load init.el
+
+Then
+command-line
+
+means
+User launched Emacs.
+
+Finally
+normal-top-level
+
+means
+Emacs started.
+
+*** Think like a detective
+
+Imagine this as a murder mystery.
+normal-top-level
+↓
+command-line
+↓
+load init.el
+↓
+straight-use-package
+↓
+straight--convert-recipe
+↓
+plist-put
+↓
+
+💥
+
+The victim died here.
+
+*** Another example
+
+Suppose you see
+ 
+#+begin_src emacs-lisp
+Debugger entered--Lisp error:
+(void-function foo)
+#+end_src
+
+Immediately translate
+void-function into English.
+"There is no function called foo."
+
+Then search downward.
+foo()
+
+Who called it?
+my-function()
+
+
+Who called that?
+org-mode-hook()
+
+Now you know
+Org Mode
+        │
+        ▼
+my-function
+        │
+        ▼
+foo
+        │
+        ▼
+ERROR
+
+*** Common errors you'll see
+
+**** Variable doesn't exist
+void-variable
+
+Example
+(void-variable org-directory)
+
+Meaning
+(setq org-directory ...)
+
+hasn't happened yet.
+
+**** Function doesn't exist
+
+void-function
+Meaning
+Function not defined.
+Usually package missing or typo.
+
+**** Wrong argument type
+
+wrong-type-argument
+
+Meaning
+Expected string
+Got number
+
+or
+Expected list
+Got symbol
+
+**** File missing
+
+file-missing
+Usually
+Cannot open load file
+
+**** Invalid function
+
+invalid-function
+Often caused by extra parentheses.
+
+Example
+((message "Hello"))
+
+Emacs thinks
+(message "Hello")
+
+returned a function. It didn't.
+Boom.
+
+*** The golden question
+
+Whenever you see a backtrace, ask yourself these three questions:
+
+**** 1. What is the error?
+
+wrong-type-argument
+
+or
+void-function
+
+**** 2. Which function actually failed?
+Usually the first function after the error.
+plist-put
+
+**** 3. Who called it?
+Walk downward until you reach your own code.
+Usually load init.el
+
+or
+my-function
+
+*** A real-world example from your error
+
+Let's annotate it:
+Debugger entered--Lisp error:
+(wrong-type-argument plistp ('ef-maris-dark))
+
+
+➡️ Expected a property list, got a normal list.
+
+plist-put(('ef-maris-dark) ...)
+
+
+➡️ `plist-put` failed because it only works on property lists.
+straight--convert-recipe(...)
+
+➡️ `straight.el` was converting a package recipe.
+straight-use-package((load-theme 'ef-maris-dark))
+
+
+➡️ *Aha!* `straight.el` thinks `load-theme` is the package to install. That doesn't make sense.
+load init.el
+```
+
+➡️ So the mistake is somewhere in your `init.el`.
+From just those few lines, you can narrow the search to the theme configuration without reading the entire trace.
+** Why two ts here?
+*** the code
+load-with-code-conversion(
+"/home/.../init.el"
+"/home/.../init.el"
+t
+t)
+
+Emacs functions can take many arguments.
+Let's see its documentation.
+~(load-with-code-conversion FILE FILE NOMESSAGE MUST-SUFFIX)~
+
+Those arguments are
+1 FILE
+2 FILE
+3 NOMESSAGE
+4 MUST-SUFFIX
+
+So
+t
+is the third argument.
+
+t
+is the fourth.
+
+They are unrelated.
+They simply happen to both be true.
+
+*** How do you know what those arguments mean?
+
+Use ~C-h f~
+Then type
+load-with-code-conversion
+
+You'll see
+~(load-with-code-conversion FILE FILE NOMESSAGE MUST-SUFFIX)~
+
+and documentation. The debugger only shows
+~function(arg1 arg2 arg3)~
+
+It doesn't show the names. You must ask Emacs.
+
+*** Why did C-h v show nothing about plist?
+
+Because ~plist-put~ is not a variable. It's a function.
+
+Remember ~C-h v~ for Variables and ~C-h f~ for Functions.
+
+#+begin_example
+Variable
+user-emacs-directory
+↓
+C-h v
+
+Function
+plist-put
+↓
+C-h f
+#+end_example
+
+** What is normal-top-level?
+
+Imagine pressing Enter after typing
+emacs
+Internally
+
+Operating System
+
+↓
+
+Start executable
+
+↓
+
+Initialize Lisp
+
+↓
+
+Read command line
+
+↓
+
+Load init.el
+
+↓
+
+Open first window
+
+↓
+
+Ready
+
+The last stage is normal-top-level
+
+Think Emacs is now running normally. Everything starts here.
+
+** What is command-line?
+
+Literally ~emacs --debug-init~ gets parsed by ~command-line~
+
+It reads
+--debug-init
+--init-directory
+filename
+
+Then decides
+Load init
+Enable debugger
+Continue startup
+
+** How to recognize the error type?
+
+Look only here.
+
+Debugger entered--Lisp error:
+(wrong-type-argument plistp ('ef-maris-dark))
+
+Split it.
+
+wrong-type-argument
+↓
+Error type.
+
+plistp
+↓
+Expected type.
+
+('ef-maris-dark)
+↓
+Actual value.
+
+So read it as an English sentence:
+
+A function expected a property list (plistp), but instead got the value
+('ef-maris-dark).
+
+Here are a few common patterns you'll see:
+
+Error	Read it as
+(void-function foo)	"Function foo does not exist."
+(void-variable bar)	"Variable bar does not exist."
+(wrong-type-argument stringp 42)	"Expected a string, got 42."
+(wrong-type-argument listp hello)	"Expected a list, got the symbol hello."
+(file-missing ...)	"A file couldn't be found or opened."
+(args-out-of-range ...)	"An index or position is outside the valid range."
+
+The convention is usually:
+
+(error-type expected-or-context actual-value ...)
+
+Learning these common error forms makes debugger output much less intimidating.
+
+
+* A suggestion
+Since you're diving deeply into Emacs and Lisp, I think the next thing to
+learn is the core Emacs Lisp data types. Once you know those, debugger
+output starts to feel almost like reading English. I'd recommend covering,
+in order:
+
+Lists
+Symbols
+Strings
+Numbers
+nil and t
+Property lists (plists)
+Association lists (alists)
+Functions and lambdas
+Quoting ('), backquoting (`), and unquoting (,)
+
+Those nine topics explain a huge fraction of the code you'll encounter in
+Emacs configurations and package internals.
+
+* How do Emacs developers inspect ALL of things?
+These are the commands they use constantly:
+
+| Command | Purpose                                                                      |
+|---------+------------------------------------------------------------------------------|
+| C-h f   | Describe a function or macro                                                 |
+| C-h v   | Describe a variable                                                          |
+| C-h o   | Describe any symbol (function, variable, macro, face, etc.)                  |
+| M-x     | pp-macroexpand-expression	Pretty-print the expansion of a macro              |
+| M-x     | pp-eval-expression	Evaluate an expression and pretty-print the result |
+| M-:     | (eval-expression)	Evaluate a single Lisp expression interactively            |
+
+One particularly useful command is C-h o ("describe-symbol"). Unlike C-h f
+or C-h v, it figures out what kind of thing the symbol is and tells you
+whether it's a function, macro, variable, face, etc.
+
+* How to expand macro
+~M-x pp-macroexpand-last-sexp~ (shows output in minibuffer)
+~M-x pp-macroexpand-expression~ (this one is better)
+
+#+begin_src emacs-lisp
+(macroexpand
+ '(use-package ef-themes
+    :straight t
+    :config
+    (load-theme 'ef-maris-dark t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(pp-macroexpand-expression
+ '(use-package ef-themes
+    :straight t
+    :config
+    (load-theme 'ef-maris-dark t)))
+#+end_src
+
+
+* How to master eglot and lsp-mode
+I love this approach. Don't decide based on Reddit, YouTube, or my opinion—**become good enough with both that you can explain why one fits a particular workflow better**.
+
+Here's the roadmap I'd follow if I were learning from scratch.
+
+** Phase 0 – Understand LSP (1 day)
+
+Before touching either client, understand the architecture.
+
+```
+Emacs
+   │
+   ▼
+LSP Client
+(Eglot or lsp-mode)
+   │
+JSON-RPC
+   │
+   ▼
+Language Server
+(clangd, pyright, rust-analyzer, gopls...)
+   │
+   ▼
+Your Code
+```
+
+Know what each layer is responsible for.
+
+Learn:
+What is LSP?
+What is JSON-RPC?
+What is a language server?
+What is a project root?
+Why does LSP need a workspace?
+
+---
+
+** Phase 1 – Learn the Language Server
+
+Don't even think about Emacs yet.
+
+Install
+
+```
+clangd
+```
+
+or
+
+```
+pyright
+```
+
+or
+
+```
+rust-analyzer
+```
+
+Learn
+
+```
+clangd --help
+```
+
+Learn
+
+```
+clangd --version
+```
+
+Find where the executable lives
+
+```
+which clangd
+```
+
+Understand:
+compile_commands.json
+include paths
+indexing
+diagnostics
+
+Remember:
+
+> **Eglot and lsp-mode are just clients.**
+
+The real intelligence comes from
+
+```
+clangd
+```
+
+---
+
+** Phase 2 – Master Eglot
+
+Only use Eglot for about a week.
+
+Learn these commands.
+
+Connection
+
+```
+M-x eglot
+M-x eglot-ensure
+M-x eglot-shutdown
+M-x eglot-shutdown-all
+```
+
+Information
+
+```
+M-x eglot-events-buffer
+M-x eglot-stderr-buffer
+M-x eglot-show-workspace-configuration
+```
+
+Navigation
+
+```
+M-.
+M-,
+xref-find-references
+```
+
+Refactoring
+
+```
+M-x eglot-rename
+```
+
+Formatting
+
+```
+M-x eglot-format
+```
+
+Actions
+
+```
+M-x eglot-code-actions
+```
+
+Documentation
+
+Hover over symbols.
+
+Observe Eldoc.
+
+---
+
+** Phase 3 – Learn what Eglot uses internally
+
+This is where mastery begins.
+
+Understand
+
+```
+completion-at-point-functions
+```
+
+Learn
+
+```
+CAPFs
+```
+
+Learn
+
+```
+xref
+```
+
+Learn
+
+```
+flymake
+```
+
+Learn
+
+```
+eldoc
+```
+
+Learn
+
+```
+project.el
+```
+
+Understand why Eglot barely implements these things—it reuses Emacs' native infrastructure.
+
+---
+
+** Phase 4 – Master lsp-mode
+
+Now disable Eglot.
+
+Use only
+
+```
+M-x lsp
+```
+
+Learn
+
+```
+M-x lsp-describe-session
+```
+
+```
+M-x lsp-workspace-show-log
+```
+
+```
+M-x lsp-restart-workspace
+```
+
+```
+M-x lsp-disconnect
+```
+
+Learn the prefix
+
+```
+C-c l
+```
+
+Explore every submenu.
+
+---
+
+** Phase 5 – Learn lsp-ui
+
+Try
+
+```
+Peek definition
+```
+
+```
+Peek references
+```
+
+```
+Sideline diagnostics
+```
+
+```
+Hover popup
+```
+
+```
+Imenu
+```
+
+Decide whether you actually like these UIs.
+
+---
+
+** Phase 6 – Learn lsp-treemacs
+
+Open
+
+```
+Errors
+```
+
+```
+Symbols
+```
+
+```
+References
+```
+
+```
+Call hierarchy
+```
+
+Notice how it integrates with Treemacs.
+
+---
+
+** Phase 7 – Learn DAP
+
+This is huge.
+
+Learn
+breakpoints
+watches
+variables
+stepping
+call stack
+
+Debug
+
+```
+C
+```
+
+```
+Python
+```
+
+```
+Rust
+```
+
+```
+Go
+```
+
+Understand
+
+```
+Debug Adapter Protocol
+```
+
+---
+
+** Phase 8 – Compare them feature-by-feature
+
+Create a notebook.
+
+For every feature compare both.
+
+---
+
+*** Startup
+
+```
+Eglot
+
+vs
+
+lsp-mode
+```
+
+---
+
+*** Memory
+
+```
+M-x memory-report
+```
+
+---
+
+*** CPU
+
+Large project.
+
+Watch responsiveness.
+
+---
+
+*** Completion
+
+```
+Corfu
+
+↓
+
+Cape
+
+↓
+
+Eglot
+```
+
+vs
+
+```
+Corfu
+
+↓
+
+Cape
+
+↓
+
+lsp-mode
+```
+
+---
+
+*** Hover
+
+Compare
+
+latency
+readability
+
+---
+
+*** Rename
+
+Rename a class.
+
+Compare speed.
+
+---
+
+*** References
+
+Which UI do you prefer?
+
+---
+
+*** Formatting
+
+Compare
+
+```
+eglot-format
+```
+
+vs
+
+```
+lsp-format-buffer
+```
+
+---
+
+*** Diagnostics
+
+Flymake
+
+vs
+
+lsp-ui sideline
+
+---
+
+*** Workspace
+
+Open
+
+Linux kernel
+
+LLVM
+
+Neovim
+
+Emacs
+
+Compare indexing.
+
+---
+
+** Phase 9 – Read the source code
+
+This is the real fun.
+
+Read
+
+```
+eglot.el
+```
+
+Understand
+
+```
+eglot-completion-at-point
+```
+
+Then
+
+Read
+
+```
+lsp-mode.el
+```
+
+Notice the architectural differences.
+
+---
+
+** Phase 10 – Learn JSON-RPC
+
+Read
+
+```
+jsonrpc.el
+```
+
+This is built into Emacs.
+
+You'll suddenly understand how both clients communicate.
+
+---
+
+** Phase 11 – Read the protocol
+
+Read the Language Server Protocol specification.
+
+Don't memorize it.
+
+Know what messages exist.
+
+Examples
+
+```
+initialize
+```
+
+```
+textDocument/completion
+```
+
+```
+textDocument/hover
+```
+
+```
+workspace/symbol
+```
+
+```
+textDocument/rename
+```
+
+```
+shutdown
+```
+
+---
+
+** Phase 12 – Build your own mini LSP client
+
+Seriously.
+
+You don't need to write a full client.
+
+Just send
+
+```
+initialize
+```
+
+Receive
+
+```
+completion
+```
+
+Print JSON.
+
+You'll understand LSP better than 99% of users.
+
+---
+
+** Phase 13 – Compare philosophies
+
+This is the most interesting part.
+
+*** Eglot philosophy
+
+```
+Emacs
+ │
+ ▼
+Reuse everything
+
+completion-at-point
+xref
+flymake
+eldoc
+project.el
+```
+
+Minimal.
+
+Native.
+
+Simple.
+
+---
+
+*** lsp-mode philosophy
+
+```
+Emacs
+
++
+
+IDE Framework
+
+lsp-ui
+lsp-treemacs
+dap-mode
+workspace management
+```
+
+Feature-rich.
+
+Integrated.
+
+Highly configurable.
+
+---
+
+** Phase 14 – Decide
+
+After using both for real projects, ask yourself:
+Which one starts faster?
+Which one feels more "Emacs"?
+Which UI do I actually use?
+Which one gets out of my way?
+Which one integrates better with my existing packages?
+Which one would I enjoy maintaining in my config a year from now?
+
+---
+
+** Bonus: Learn the ecosystem around them
+
+Regardless of which client you end up preferring, understanding these Emacs libraries will pay off because they're used broadly:
+
+`project.el`
+`xref`
+`flymake`
+`eldoc`
+`jsonrpc`
+`compile`
+`treesit`
+`completion-at-point-functions` (CAPFs)
+`imenu`
+
+---
+
+** The final challenge
+
+If you can confidently explain:
+how a completion request travels from **Corfu → CAPF → Eglot/lsp-mode → JSON-RPC → language server → back to Corfu**,
+why Eglot leans on built-in Emacs facilities while `lsp-mode` provides its own ecosystem,
+and when each approach is advantageous,
+
+then you'll have moved beyond simply *using* an LSP client—you'll understand how the whole system works. That's the level of understanding that makes it easy to customize, debug, and extend your Emacs setup.
+
+* how to use babel
+** example 1
+  =#+PROPERTY: header-args:emacs-lisp :tangle config.el=
+
+=* Main Config=
+=#+begin_src emacs-lisp=
+=(setq foo t)=
+=#+end_src=
+
+=* Scratch Area=
+=:PROPERTIES:=
+=:header-args:emacs-lisp: :tangle no=
+=:END:=
+
+=#+begin_src emacs-lisp=
+=(message "Testing")=
+=#+end_src=
+
+=#+begin_src emacs-lisp=
+=(message "More testing")=
+=#+end_src=
+
+=* Back to Normal=
+=#+begin_src emacs-lisp=
+=(setq bar t)=
+=#+end_src=
+
+** example 2
+  =#+TITLE: Custom Configuration=
+=#+PROPERTY: header-args:emacs-lisp :tangle config-custom.el=
+
+=* This block is tangled:=
+=#+begin_src emacs-lisp=
+=(setq user-full-name "Wolfer")=
+=#+end_src=
+
+=* This one is documentation only:=
+=#+begin_src emacs-lisp :tangle no=
+=;; Old implementation kept for reference=
+=(setq user-full-name "Old Name")=
+=#+end_src=
+
+=* This one goes to another file:=
+=#+begin_src emacs-lisp :tangle helpers.el=
+=(defun my-helper ()
+  (message "Hello"))=
+=#+end_src=
