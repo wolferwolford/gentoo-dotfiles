@@ -1,0 +1,10 @@
+x11-wm/muffin introspection
+
+gnome-extra/cinnamon eds networkmanager gstreamer
+x11-libs/xapp introspection
+gnome-extra/cinnamon-control-center networkmanager modemmanager
+
+gnome-extra/nemo wayland tracker
+dev-libs/libxmlb introspection
+
+gnome-base/gsettings-desktop-schemas introspection

@@ -1,0 +1,1 @@
+gui-apps/waybar udev upower pipewire pulseaudio logind wifi tray mpris jack mpd network libinput -test -evdev -experimental -sndio

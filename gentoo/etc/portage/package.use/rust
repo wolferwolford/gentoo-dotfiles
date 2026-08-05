@@ -1,0 +1,1 @@
+dev-lang/rust clippy cpu_flags_x86_sse2 doc rustfmt system-llvm rust-analyzer rust-src
