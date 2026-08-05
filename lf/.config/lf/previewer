@@ -1,0 +1,489 @@
+#!/usr/bin/env bash
+
+#
+#---------------------------beginner version--------------------------------
+#
+
+#draw() {
+#   kitten icat --stdin no --transfer-mode memory --place "${w}x${h}@${x}x${y}" "$1" </dev/null >/dev/tty
+#   exit 1
+# }
+
+# file="$1"
+# w="$2"
+# h="$3"
+# x="$4"
+# y="$5"
+
+# case "$(file -Lb --mime-type "$file")" in 
+#   image/*)
+#     draw "$file"
+#     ;;
+#   video/*)
+#     # vidthumb is from here:
+#     # https://raw.githubusercontent.com/duganchen/kitty-pistol-previewer/main/vidthumb
+#     draw "$(vidthumb "$file")"
+#     ;;
+# esac
+
+# pistol "$file"
+
+#
+#---------------------------intermediate level-------------------------------
+#
+
+# set -o pipefail
+# IFS=$'\n'
+
+# FILE="$1"
+# WIDTH="$2"
+# HEIGHT="$3"
+# X="$4"
+# Y="$5"
+
+# MIME=$(file --mime-type -Lb "$FILE")
+
+# draw() {
+#     kitten icat \
+#         --stdin no \
+#         --transfer-mode memory \
+#         --place "${WIDTH}x${HEIGHT}@${X}x${Y}" \
+#         "$1" </dev/null >/dev/tty
+
+#     exit 1
+# }
+
+# try() {
+#     "$@" 2>/dev/null && return 0
+#     return 1
+# }
+
+# case "$MIME" in
+
+#     image/*)
+#         draw "$FILE"
+#         ;;
+
+#     video/*)
+#         THUMB="/tmp/lf-thumb-${USER}.jpg"
+
+#         ffmpegthumbnailer \
+#             -i "$FILE" \
+#             -o "$THUMB" \
+#             -s 0 >/dev/null 2>&1
+
+#         draw "$THUMB"
+#         ;;
+
+#     text/*|*/json|*/xml)
+
+#         try bat \
+#             --color=always \
+#             --style=plain \
+#             --line-range=:200 \
+#             "$FILE" ||
+
+#         cat "$FILE"
+
+#         exit 0
+#         ;;
+
+#     application/pdf)
+
+#         pdftoppm \
+#             -f 1 \
+#             -singlefile \
+#             -jpeg \
+#             "$FILE" \
+#             /tmp/lfpdf >/dev/null 2>&1
+
+#         draw "/tmp/lfpdf.jpg"
+#         ;;
+
+#     application/zip|application/x-tar|application/gzip)
+
+#         try ouch list "$FILE" ||
+#         try atool --list "$FILE" ||
+#         bsdtar -tf "$FILE"
+
+#         exit 0
+#         ;;
+
+#     audio/*)
+
+#         mediainfo "$FILE"
+#         exit 0
+#         ;;
+
+# esac
+
+# echo "----- FILE INFO -----"
+# file "$FILE"
+
+
+
+#
+#
+#------------------------------pro level----------------------------------
+#
+#
+
+# =========================================================
+# LF UNIVERSAL PREVIEWER
+# =========================================================
+
+set -o noclobber
+set -o noglob
+set -o nounset
+set -o pipefail
+
+IFS=$'\n'
+
+# =========================================================
+# LF ARGUMENTS
+# =========================================================
+
+FILE="${1}"
+WIDTH="${2:-80}"
+HEIGHT="${3:-40}"
+X="${4:-0}"
+Y="${5:-0}"
+MODE="${6:-preview}"
+
+# =========================================================
+# FILE INFO
+# =========================================================
+
+MIME="$(file --dereference --brief --mime-type -- "$FILE")"
+EXTENSION="${FILE##*.}"
+EXTENSION="$(printf "%s" "$EXTENSION" | tr '[:upper:]' '[:lower:]')"
+
+# =========================================================
+# SETTINGS
+# =========================================================
+
+CACHE_DIR="/tmp/lf"
+mkdir -p "$CACHE_DIR"
+
+MAX_HIGHLIGHT_SIZE=$((1024 * 1024)) # 1MB
+
+# =========================================================
+# HELPERS
+# =========================================================
+
+try() {
+    "$@" 2>/dev/null && return 0
+    return 1
+}
+
+inside_tmux() {
+    [ -n "${TMUX:-}" ]
+}
+
+supports_kitty() {
+    [[ "${TERM:-}" == "xterm-kitty" ]]
+}
+
+supports_sixel() {
+    command -v chafa >/dev/null
+}
+
+# =========================================================
+# IMAGE DRAWING
+# =========================================================
+
+draw_kitty() {
+
+    kitten icat \
+        --stdin no \
+        --transfer-mode memory \
+        --place "${WIDTH}x${HEIGHT}@${X}x${Y}" \
+        "$1" </dev/null >/dev/tty
+
+    exit 1
+}
+
+draw_chafa() {
+
+    chafa \
+        --animate=off \
+        --size="${WIDTH}x${HEIGHT}" \
+        "$1"
+
+    exit 1
+}
+
+draw_image() {
+
+    if supports_kitty && ! inside_tmux; then
+        draw_kitty "$1"
+    elif supports_sixel; then
+        draw_chafa "$1"
+    fi
+
+    return 1
+}
+
+# =========================================================
+# IMAGE FILES
+# =========================================================
+
+handle_image() {
+
+    draw_image "$FILE" && exit 1
+
+    try exiftool "$FILE"
+
+    exit 0
+}
+
+# =========================================================
+# VIDEO FILES
+# =========================================================
+
+handle_video() {
+
+    THUMB="${CACHE_DIR}/$(basename "$FILE").jpg"
+
+    if [ ! -f "$THUMB" ]; then
+
+        ffmpegthumbnailer \
+            -i "$FILE" \
+            -o "$THUMB" \
+            -s 0 >/dev/null 2>&1
+    fi
+
+    draw_image "$THUMB" && exit 1
+
+    try mediainfo "$FILE"
+
+    exit 0
+}
+
+# =========================================================
+# PDF FILES
+# =========================================================
+
+handle_pdf() {
+
+    PDFTHUMB="${CACHE_DIR}/$(basename "$FILE").jpg"
+
+    if [ ! -f "$PDFTHUMB" ]; then
+
+        pdftoppm \
+            -jpeg \
+            -singlefile \
+            -f 1 \
+            "$FILE" \
+            "${PDFTHUMB%.jpg}" >/dev/null 2>&1
+    fi
+
+    draw_image "$PDFTHUMB" && exit 1
+
+    try pdftotext -l 10 -nopgbrk "$FILE" -
+    try pdfinfo "$FILE"
+
+    exit 0
+}
+
+# =========================================================
+# TEXT / CODE
+# =========================================================
+
+handle_text() {
+
+    SIZE="$(stat --printf='%s' -- "$FILE")"
+
+    if [ "$SIZE" -gt "$MAX_HIGHLIGHT_SIZE" ]; then
+        head -n 200 "$FILE"
+        exit 0
+    fi
+
+    try bat \
+        --color=always \
+        --style=plain \
+        --line-range=:300 \
+        "$FILE"
+
+    try highlight \
+        --out-format=xterm256 \
+        --force \
+        "$FILE"
+
+    try pygmentize \
+        -O style=monokai \
+        -f terminal256 \
+        "$FILE"
+
+    head -n 300 "$FILE"
+
+    exit 0
+}
+
+# =========================================================
+# ARCHIVES
+# =========================================================
+
+handle_archive() {
+
+    try ouch list "$FILE"
+    try atool --list "$FILE"
+    try bsdtar -tf "$FILE"
+
+    exit 0
+}
+
+# =========================================================
+# SQLITE
+# =========================================================
+
+handle_sqlite() {
+
+    echo "========== TABLES =========="
+    sqlite3 "$FILE" ".tables"
+
+    exit 0
+}
+
+# =========================================================
+# TORRENTS
+# =========================================================
+
+handle_torrent() {
+
+    try transmission-show "$FILE"
+
+    exit 0
+}
+
+# =========================================================
+# HTML
+# =========================================================
+
+handle_html() {
+
+    try w3m -dump "$FILE"
+    try lynx -dump "$FILE"
+    try elinks -dump "$FILE"
+
+    exit 0
+}
+
+# =========================================================
+# NOTEBOOKS
+# =========================================================
+
+handle_ipynb() {
+
+    try jupyter nbconvert \
+        --to markdown \
+        "$FILE" \
+        --stdout
+
+    exit 0
+}
+
+# =========================================================
+# AUDIO
+# =========================================================
+
+handle_audio() {
+
+    try mediainfo "$FILE"
+    try exiftool "$FILE"
+
+    exit 0
+}
+
+# =========================================================
+# ELF BINARIES
+# =========================================================
+
+handle_elf() {
+
+    try readelf -WCa "$FILE"
+    try file "$FILE"
+
+    exit 0
+}
+
+# =========================================================
+# MAIN MIME DISPATCH
+# =========================================================
+
+case "$MIME" in
+
+    image/*)
+        handle_image
+        ;;
+
+    video/*)
+        handle_video
+        ;;
+
+    audio/*)
+        handle_audio
+        ;;
+
+    application/pdf)
+        handle_pdf
+        ;;
+
+    text/*|*/xml|*/json)
+        handle_text
+        ;;
+
+    application/zip|application/x-tar|application/gzip|application/x-7z-compressed)
+        handle_archive
+        ;;
+
+    application/x-sqlite3|application/vnd.sqlite3)
+        handle_sqlite
+        ;;
+
+    application/x-bittorrent)
+        handle_torrent
+        ;;
+
+    text/html)
+        handle_html
+        ;;
+
+    application/x-ipynb+json)
+        handle_ipynb
+        ;;
+
+    application/x-executable|application/x-pie-executable|application/x-sharedlib)
+        handle_elf
+        ;;
+
+esac
+
+# =========================================================
+# EXTENSION FALLBACKS
+# =========================================================
+
+case "$EXTENSION" in
+
+    torrent)
+        handle_torrent
+        ;;
+
+    ipynb)
+        handle_ipynb
+        ;;
+
+    sqlite|db)
+        handle_sqlite
+        ;;
+
+esac
+
+# =========================================================
+# GENERIC FALLBACK
+# =========================================================
+
+echo "========== FILE INFO =========="
+file --dereference --brief "$FILE"
+
+exit 0
