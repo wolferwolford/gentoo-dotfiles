@@ -266,18 +266,18 @@
   ;;                   sly-mrepl-mode
   ;;                   sly-db-mode
   ;;                   sly-inspector-mode
-  ;; 		  sly-trace-dialog-mode
+  ;; 	             sly-trace-dialog-mode
   ;;                   sly-xref-mode
-  ;; 		  eat-mode
-  ;; 		  org-mode
-  ;; 		  calendar-mode
-  ;; 		  messages-buffer-mode
-  ;; 		  debugger-mode
-  ;; 		  ;;mu4e-main-mode
-  ;; 		  ;; mu4e-headers-mode
-  ;; 		  ;;mu4e-view-mode
-  ;; 		  ;; mu4e-org-mode
-  ;; 		  magit-status-mode
+  ;; 		     eat-mode
+  ;; 		     org-mode
+  ;; 		     calendar-mode
+  ;; 		     messages-buffer-mode
+  ;; 		     debugger-mode
+  ;; 		     ;;mu4e-main-mode
+  ;; 		     ;; mu4e-headers-mode
+  ;; 		     ;;mu4e-view-mode
+  ;; 		     ;; mu4e-org-mode
+  ;; 		     magit-status-mode
   ;;                   magit-log-mode
   ;;                   magit-diff-mode
   ;;                   magit-process-mode
@@ -294,12 +294,12 @@
     (column-number-mode 1)
     ;;(display-time-mode 1)
     ;;(display-battery-mode 1)
-    (set-face-attribute 'doom-modeline-evil-emacs-state nil
-                        :foreground "#bb9af7")
-    (set-face-attribute 'doom-modeline-evil-normal-state nil
-                        :foreground "#79a8ff")
-    (set-face-attribute 'doom-modeline-evil-insert-state nil
-                        :foreground "#b6b6b6")
+    ;; (set-face-attribute 'doom-modeline-evil-emacs-state nil
+    ;;                     :foreground "#bb9af7")
+    ;; (set-face-attribute 'doom-modeline-evil-normal-state nil
+    ;;                     :foreground "#79a8ff")
+    ;; (set-face-attribute 'doom-modeline-evil-insert-state nil
+    ;;                     :foreground "#b6b6b6")
     :custom
     (doom-modeline-height 25)
     (doom-modeline-bar-width 4)
@@ -501,9 +501,9 @@
 
 **** Treemace Evil
 #+begin_src emacs-lisp
-  (use-package treemacs-evil
-    :after (treemacs evil)
-    :straight t)
+  ;; (use-package treemacs-evil
+  ;;   :after (treemacs evil)
+  ;;   :straight t)
 #+end_src
 
 **** Treemacs Magit
@@ -910,9 +910,10 @@
 #+begin_src emacs-lisp
   (use-package multiple-cursors
     :straight t
-    :after evil
-    :config
-    (evil-set-initial-state 'multiple-cursors-mode 'emacs))
+    ;; :after evil
+    ;; :config
+    ;; (evil-set-initial-state 'multiple-cursors-mode 'emacs)
+    )
 #+end_src
 
 *** yasnippet
