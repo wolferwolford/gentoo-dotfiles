@@ -1286,6 +1286,12 @@
     )
 #+end_src
 
+*** gptel
+#+begin_src emacs-lisp
+  (use-package gptel
+    :straight t)
+#+end_src
+
 ** Built Ins
 *** treesit
 #+begin_src emacs-lisp
