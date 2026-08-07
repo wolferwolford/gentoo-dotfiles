@@ -1288,9 +1288,9 @@
 
 *** gptel
 #+begin_src emacs-lisp
-  (use-package gptel
-    :straight t
-    :commands gptel)
+  ;; (use-package gptel
+  ;;   :straight t
+  ;;   :commands gptel)
 #+end_src
 
 ** Built Ins
