@@ -72,7 +72,7 @@ emerge --ask app-admin/stow
 Clone the repository:
 
 ```bash
-git clone https://github.com/<your-username>/dotfiles.git ~/dotfiles
+git clone https://github.com/wolferwolford/gentoo-dotfiles.git ~/dotfiles
 ```
 
 Move into the repository:
